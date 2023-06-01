@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ ! -z "${DEBUG}" ] && [ "${DEBUG}" -eq 1 ]; then
+  exit 0
+fi
+
+/usr/local/bin/php /app/releaser.php >> /dev/null 2>&1

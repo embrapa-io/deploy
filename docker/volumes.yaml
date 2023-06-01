@@ -1,0 +1,15 @@
+version: '3.9'
+
+services:
+  development:
+    volumes:
+      - ..:/app
+      - /app/vendor
+
+  test:
+    volumes:
+      - ../data:/app/data
+      - ../log:/app/log
+
+  production:
+    volumes:

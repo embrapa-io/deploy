@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  daemon:
+    build:
+      context: .
+      dockerfile: ./docker/daemon/Dockerfile
+      args:
+        PHP_ENV: ${ENVIRONMENT}
+        DEBUG: ${DEBUG}
+    restart: unless-stopped
+    environment:
+      - GITLAB_URL
+      - GITLAB_SSH
+      - SMTP_HOST
+      - SMTP_PORT
+      - SMTP_SECURE
+      - LOG_MAIL
+    extends:
+      file: ./docker/volumes.yaml
+      service: ${ENVIRONMENT}
+    healthcheck:
+      test: php -l /app/releaser.php || exit 1
+      interval: 10s
+      timeout: 10s
+      start_period: 5s
+      retries: 5
+
+  mail:
+    build:
+      dockerfile: ./docker/mail/Dockerfile
+    restart: unless-stopped
+    user: root
+    expose:
+      - 1025
+      - 8025
+    ports:
+      - ${MAILHOG_PORT}:8025
+    profiles:
+      - development
