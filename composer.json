@@ -1,0 +1,19 @@
+{
+  "name": "embrapa.io/releaser",
+  "description": "Script for automatic deploy of Embrapa I/O apps releases in external remote environments.",
+  "type": "project",
+  "license": "BSD-3-Clause",
+  "authors": [
+    {
+      "name": "Camilo Carromeu",
+      "email": "camilo.carromeu@embrapa.br",
+      "homepage": "https://www.embrapa.br/equipe/-/empregado/354215/camilo-carromeu",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": ">=7.2",
+    "guzzlehttp/guzzle": "^7.2",
+    "http-interop/http-factory-guzzle": "^1.0"
+  }
+}
