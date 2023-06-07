@@ -25,8 +25,9 @@ if (!(int) ini_get ('register_argc_argv'))
 	die ("CRITICAL > This is a command-line script! You must enable 'register_argc_argv' directive. \n");
 
 $vars = [
+	'SERVER',
 	'GITLAB_URL',
-	'GITLAB_SSH',
+	'GITLAB_TOKEN',
 	'SMTP_HOST',
 	'SMTP_PORT',
 	'SMTP_SECURE',
@@ -44,10 +45,27 @@ if (sizeof ($unsetted))
 
 $_verbose = (bool) getenv ('VERBOSE');
 
+$_lock = '/app/data/.lock';
+
+if (!$_verbose && file_exists ($_lock) && (!is_writable ($_lock) || time () - filemtime ($_lock) < getenv ('LOCK_LIFETIME_MINUTES') * 60))
+	die ("CRITICAL > The script is already being performed by a process started earlier! \n");
+
+unlink ($_lock);
+
+$builds = '/app/apps/builds.json';
+
+if (!file_exists ($builds) || !is_readable ($builds))
+	die ("CRITICAL > Is needed configure builds of apps to deploy in file 'apps/builds.json'! \n");
+
+$_builds = json_decode (file_get_contents ($builds));
+
 require_once 'vendor/autoload.php';
 
 require 'helper/error.php';
 
+require 'class/GitLab.php';
+require 'class/GitClient.php';
+require 'class/Log.php';
 require 'class/Mail.php';
 
 $_path = getcwd ();
@@ -60,23 +78,22 @@ try
 
 	$_benchmark = time ();
 
+	file_put_contents ($_lock, '');
+
 	echo "INFO > Starting execution... \n\n";
 
 	$_nothing = TRUE;
 
-	/** CODE INIT **/
+	foreach ($_builds as $trash => $b)
+	{
+		echo "INFO > Trying to load info for '". $b->project ."/". $b->app ."@". $b->stage ."'... \n";
+	}
 
-	echo "INFO > Sending e-mail... \n";
-
-	(new Mail)->send ('pasto-certo/pwa@release', 'Hello World!', [ 'alice@carromeu.com', 'matheus@carromeu.com', 'melissa@carromeu.com' ]);
-
-	echo "INFO > e-Mail sended! \n";
-
-	/** CODE END **/
+	unlink ($_lock);
 
 	echo "FINISH > All done after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 
-	// if (!$_verbose && !$_nothing) Log::singleton ()->getInfoLogger ()->info (ob_get_clean ());
+	if (!$_verbose && !$_nothing) Log::info (ob_get_clean ());
 
 	exit (0);
 }
@@ -91,8 +108,7 @@ try
 {
 	echo "FINISH > Stopped after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 
-	// if (!$_verbose) Log::singleton ()->getErrorLogger ()->critical (ob_get_clean ());
+	if (!$_verbose) Log::critical (ob_get_clean ());
 }
 catch (Exception $e)
-{
-}
+{}

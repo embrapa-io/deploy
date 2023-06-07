@@ -6,11 +6,13 @@ use Symfony\Component\Mime\Email;
 
 class Mail
 {
+    static private $single = FALSE;
+
     private $mailer = null;
 
     private $log = null;
 
-    public function __construct ()
+    private final function __construct ()
 	{
         // https://symfony.com/doc/current/mailer.html
         // https://code.tutsplus.com/tutorials/send-emails-in-php-using-the-swift-mailer--cms-31218
@@ -22,10 +24,22 @@ class Mail
         $this->log = getenv ('LOG_MAIL');
     }
 
+    static public function singleton ()
+	{
+		if (self::$single !== FALSE)
+			return self::$single;
+
+		$class = __CLASS__;
+
+		self::$single = new $class ();
+
+		return self::$single;
+	}
+
     public function send ($subject, $message, $cc = [])
     {
         $email = (new Email ())
-            ->from ('Releaser <no-reply@embrapa.io>')
+            ->from ('Embrapa I/O Releaser Script <no-reply@embrapa.io>')
             ->to ($this->log)
             ->subject ($subject)
             ->text ($message);

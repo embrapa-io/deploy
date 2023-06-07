@@ -1,7 +1,4 @@
-FROM php:8.1-cli-alpine AS base
-
-RUN mkdir -p /etc/periodic/minutely \
- && echo "*	*	*	*	*	run-parts /etc/periodic/minutely" >> /var/spool/cron/crontabs/root
+FROM php:cli-alpine AS base
 
 COPY ./ssh /app/
 
@@ -23,6 +20,7 @@ RUN set -ex \
  && ssh-add ~/.ssh/id_rsa \
  && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config \
  && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+ && mkdir -p /etc/periodic/releaser \
  && rm -rf /var/cache/apk/*
 
 FROM base AS docker
@@ -42,27 +40,21 @@ RUN set -ex \
 
 FROM docker AS releaser
 
-ARG PHP_ENV
 ARG DEBUG
+ARG SCHEDULER_MINUTES
 
-ENV PHP_ENV $PHP_ENV
 ENV DEBUG $DEBUG
-
-COPY ./docker/daemon/minutely/* /etc/periodic/minutely/
-COPY ./docker/daemon/15min/* /etc/periodic/15min/
-COPY ./docker/daemon/hourly/* /etc/periodic/hourly/
-COPY ./docker/daemon/daily/* /etc/periodic/daily/
 
 WORKDIR /app
 
 COPY ./composer.* /app/
 
+COPY ./docker/daemon/release /etc/periodic/releaser/
+
 RUN set -ex \
- && composer install --no-interaction -d /app \
- && chmod a+x /etc/periodic/minutely/* \
- && chmod a+x /etc/periodic/15min/* \
- && chmod a+x /etc/periodic/hourly/* \
- && chmod a+x /etc/periodic/daily/*
+ && echo "*/$SCHEDULER_MINUTES	*	*	*	*	run-parts /etc/periodic/releaser" >> /var/spool/cron/crontabs/root \
+ && chmod a+x /etc/periodic/releaser/* \
+ && composer install --no-interaction -d /app
 
 ENTRYPOINT ["/sbin/tini", "--"]
 

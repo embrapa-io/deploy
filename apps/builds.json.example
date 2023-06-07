@@ -1,0 +1,21 @@
+[
+  {
+    "project": "pasto-certo",
+    "app": "pwa",
+    "stage": "release",
+    "team": [
+      "camilo@carromeu.com",
+      "alice@carromeu.com",
+      "matheus@carromeu.com",
+      "melissa@carromeu.com"
+    ],
+    "sentry": {
+      "dsn": "https://abcdef0123456789@bug.embrapa.io/999"
+    },
+    "matomo": {
+      "id": 999,
+      "token": "abcdef0123456789"
+    },
+    "active": true
+  }
+]
