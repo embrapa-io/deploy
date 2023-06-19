@@ -12,7 +12,9 @@ services:
     privileged: true
     environment:
       - SERVER
+      - ORCHESTRATOR
       - GITLAB_URL
+      - GITLAB_SSH
       - GITLAB_TOKEN
       - SMTP_HOST
       - SMTP_PORT

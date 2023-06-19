@@ -13,8 +13,11 @@ class Controller
     const PATH = __DIR__ . DIRECTORY_SEPARATOR .'..'. DIRECTORY_SEPARATOR .'controller'. DIRECTORY_SEPARATOR;
 
     private $boilerplates = [];
-    private $clusters = null;
+    private $clusters = NULL;
     private $types = [];
+
+    private $orchestrator = NULL;
+    private $environment = [];
 
     private final function __construct ()
 	{
@@ -38,6 +41,23 @@ class Controller
         if (!is_array ($this->boilerplates) || !is_object ($this->clusters) || !is_array ($this->types))
             throw new Exception ("Metadata files not loaded!");
 
+        $type = null;
+
+        foreach ($this->types as $trash => $t)
+        {
+            if (getenv ('ORCHESTRATOR') != $t->type) continue;
+
+            $type = $t;
+
+            break;
+        }
+
+        if (!$type)
+            throw new Exception ("Fail to load type '". getenv ('ORCHESTRATOR') ."'! See registered types in '". getenv ('GITLAB_URL') ."/io/boilerplate/metadata' at file 'orchestrators.json'.");
+
+        $this->orchestrator = getenv ('ORCHESTRATOR');
+        $this->environment = $type->variables;
+
         echo "INFO > Metadata info of boilerplates, clusters and types loaded! \n";
     }
 
@@ -53,34 +73,9 @@ class Controller
 		return self::$single;
 	}
 
-    static public function validate ()
-    {
-        require self::PATH .'validate.php';
-    }
-
     static public function deploy ()
     {
         require self::PATH .'deploy.php';
-    }
-
-    static public function health ($_stage)
-    {
-        require self::PATH .'health.php';
-    }
-
-    static public function support ($type, $power)
-    {
-        require self::PATH .'support/'. $type .'/'. ($power ? 'on' : 'off') .'.php';
-    }
-
-    static public function undeploy ()
-    {
-        require self::PATH .'undeploy.php';
-    }
-
-    static public function restart ()
-    {
-        require self::PATH .'restart.php';
     }
 
     static protected function score ($stage, $version)

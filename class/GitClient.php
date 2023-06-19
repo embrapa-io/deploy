@@ -96,6 +96,8 @@ class GitClient
         {
             self::delete ($clone);
 
+            echo "\n". implode ("\n", $output) ."\n";
+
             throw new Exception ('Impossible to clone repository at tag "'. $tag .'"');
         }
 

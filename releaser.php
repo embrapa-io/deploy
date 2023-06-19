@@ -26,7 +26,9 @@ if (!(int) ini_get ('register_argc_argv'))
 
 $vars = [
 	'SERVER',
+	'ORCHESTRATOR',
 	'GITLAB_URL',
+	'GITLAB_SSH',
 	'GITLAB_TOKEN',
 	'SMTP_HOST',
 	'SMTP_PORT',
@@ -50,25 +52,26 @@ $_lock = '/app/data/.lock';
 if (!$_verbose && file_exists ($_lock) && (!is_writable ($_lock) || time () - filemtime ($_lock) < getenv ('LOCK_LIFETIME_MINUTES') * 60))
 	die ("CRITICAL > The script is already being performed by a process started earlier! \n");
 
-unlink ($_lock);
-
-$builds = '/app/apps/builds.json';
-
-if (!file_exists ($builds) || !is_readable ($builds))
-	die ("CRITICAL > Is needed configure builds of apps to deploy in file 'apps/builds.json'! \n");
-
-$_builds = json_decode (file_get_contents ($builds));
+@unlink ($_lock);
 
 require_once 'vendor/autoload.php';
 
-require 'helper/error.php';
+require_once 'helper/error.php';
 
-require 'class/GitLab.php';
-require 'class/GitClient.php';
-require 'class/Log.php';
-require 'class/Mail.php';
+require_once 'class/Log.php';
+require_once 'class/Mail.php';
+require_once 'class/GitLab.php';
+require_once 'class/GitClient.php';
+require_once 'class/Controller.php';
 
 $_path = getcwd ();
+
+$builds = $_path . DIRECTORY_SEPARATOR .'apps'. DIRECTORY_SEPARATOR .'builds.json';
+
+if (!file_exists ($builds) || !is_readable ($builds))
+	die ("CRITICAL > Is needed configure builds of apps to deploy in file '". $builds ."'! \n");
+
+$_builds = json_decode (file_get_contents ($builds));
 
 set_error_handler ('handleError');
 
@@ -84,10 +87,7 @@ try
 
 	$_nothing = TRUE;
 
-	foreach ($_builds as $trash => $b)
-	{
-		echo "INFO > Trying to load info for '". $b->project ."/". $b->app ."@". $b->stage ."'... \n";
-	}
+	Controller::singleton ()->deploy ();
 
 	unlink ($_lock);
 
