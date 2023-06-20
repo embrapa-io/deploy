@@ -79,7 +79,7 @@ class DockerSwarm extends Orchestrator
         if ($manager === NULL)
             throw new Exception ('All cluster manager nodes are unreachable');
 
-        exec ('DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER ." info --format '{{.Swarm.ControlAvailable}}' 2>&1", $output, $return);
+        exec (''. self::DOCKER ." info --format '{{.Swarm.ControlAvailable}}' 2>&1", $output, $return);
 
         if ($return !== 0)
         {
@@ -104,14 +104,14 @@ class DockerSwarm extends Orchestrator
         return array_merge ([ $cluster->host ], $managers, $workers);
     }
 
-    static public function validate ($path, $cluster, $ports)
+    static public function validate ($path)
     {
         $manager = self::getUpManagerNode ($cluster);
 
         return self::checkDockerSwarmFile ($path, $manager, $ports);
     }
 
-    static public function deploy ($path, $cluster, $ports)
+    static public function deploy ($path)
     {
         $manager = self::getUpManagerNode ($cluster);
 
@@ -137,9 +137,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Creating a stack network named as '". $name ."' with Docker... \n";
 
-        echo 'COMMAND > DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' network create -d overlay '. $name ."\n";
+        echo 'COMMAND > '. self::DOCKER .' network create -d overlay '. $name ."\n";
 
-        exec ('DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' network create -d overlay '. $name .' 2>&1', $output, $return);
+        exec (''. self::DOCKER .' network create -d overlay '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
             echo implode ("\n", $output) ."\n";
@@ -149,9 +149,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Building application with Docker Compose... \n";
 
-        echo 'COMMAND > set -e && env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $?'."\n";
+        echo 'COMMAND > set -e && env $(cat .env.ci) '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $?'."\n";
 
-        passthru ('set -e && env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $? 2>&1', $return);
+        passthru ('set -e && env $(cat .env.ci) '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $? 2>&1', $return);
 
         if ($return !== 0)
             throw new Exception ('Error when buildings containers with Docker Compose');
@@ -161,9 +161,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Pushing images to registry... \n";
 
-        echo 'COMMAND > env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER_COMPOSE .' push '."\n";
+        echo 'COMMAND > env $(cat .env.ci) '. self::DOCKER_COMPOSE .' push '."\n";
 
-        exec ('env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER_COMPOSE .' push 2>&1', $output, $return);
+        exec ('env $(cat .env.ci) '. self::DOCKER_COMPOSE .' push 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -177,9 +177,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Checking if stack ". $name ." is running...\n";
 
-        echo 'COMMAND > DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
+        echo 'COMMAND > '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
 
-        exec ('DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
+        exec (''. self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
 
         if ($return !== 0)
             throw new Exception ("Impossible to check deployed stacks");
@@ -191,9 +191,9 @@ class DockerSwarm extends Orchestrator
 
             echo "INFO > Stopping application with Docker Swarm... \n";
 
-            echo 'COMMAND > env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack rm '. $name ."\n";
+            echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name ."\n";
 
-            exec ('env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
+            exec ('env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
 
             echo implode ("\n", $output) ."\n";
 
@@ -208,9 +208,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Deploying aplication stack as '". $name ."' in cluster with Docker Swarm... \n";
 
-        echo 'COMMAND > env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name ."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name ."\n";
 
-        exec ('env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name .' 2>&1', $output, $return);
+        exec ('env $(cat .env && cat .env.ci) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -226,9 +226,9 @@ class DockerSwarm extends Orchestrator
 
         $manager = self::getUpManagerNode ($cluster);
 
-        echo 'COMMAND > DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack ls --format "{{.Name}}"'."\n";
+        echo 'COMMAND > '. self::DOCKER .' stack ls --format "{{.Name}}"'."\n";
 
-        exec ('DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack ls --format "{{.Name}}"', $stacks, $return1);
+        exec (''. self::DOCKER .' stack ls --format "{{.Name}}"', $stacks, $return1);
 
         if ($return1 !== 0)
             throw new Exception ('Error to retrieve stacks from manager node "'. $manager .'"');
@@ -248,9 +248,9 @@ class DockerSwarm extends Orchestrator
             unset ($return2);
             unset ($srvcs);
 
-            echo 'COMMAND > DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack services --format "{{.Name}}|{{.Mode}}|{{.Replicas}}" '. $stack ."\n";
+            echo 'COMMAND > '. self::DOCKER .' stack services --format "{{.Name}}|{{.Mode}}|{{.Replicas}}" '. $stack ."\n";
 
-            exec ('DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack services --format "{{.Name}}|{{.Mode}}|{{.Replicas}}" '. $stack, $srvcs, $return2);
+            exec (''. self::DOCKER .' stack services --format "{{.Name}}|{{.Mode}}|{{.Replicas}}" '. $stack, $srvcs, $return2);
 
             if ($return2 !== 0 || !sizeof ($srvcs))
                 continue;
@@ -653,9 +653,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Checking if stack ". $name ." is deployed...\n";
 
-        echo 'COMMAND > DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
+        echo 'COMMAND > '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
 
-        exec ('DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
+        exec (''. self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
 
         if ($return !== 0)
             throw new Exception ("Impossible to check deployed stacks");
@@ -665,9 +665,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Stopping application with Docker Swarm... \n";
 
-        echo 'COMMAND > env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack rm '. $name ."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name ."\n";
 
-        exec ('env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
+        exec ('env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -687,9 +687,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Checking if stack ". $name ." is deployed...\n";
 
-        echo 'COMMAND > DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
+        echo 'COMMAND > '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
 
-        exec ('DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
+        exec (''. self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
 
         if ($return !== 0)
             throw new Exception ("Impossible to check deployed stacks");
@@ -698,9 +698,9 @@ class DockerSwarm extends Orchestrator
         {
             echo "INFO > Stopping application with Docker Swarm... \n";
 
-            echo 'COMMAND > env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack rm '. $name ."\n";
+            echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name ."\n";
 
-            exec ('env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
+            exec ('env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
 
             echo implode ("\n", $output) ."\n";
 
@@ -715,9 +715,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Creating a stack network named as '". $name ."' with Docker Swarm... \n";
 
-        echo 'COMMAND > DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' network create -d overlay '. $name ."\n";
+        echo 'COMMAND > '. self::DOCKER .' network create -d overlay '. $name ."\n";
 
-        exec ('DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' network create -d overlay '. $name .' 2>&1', $output, $return);
+        exec (''. self::DOCKER .' network create -d overlay '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
             echo implode ("\n", $output) ."\n";
@@ -727,9 +727,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Deploying aplication stack as '". $name ."' in cluster with Docker Swarm... \n";
 
-        echo 'COMMAND > env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name ."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name ."\n";
 
-        exec ('env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $manager .'" '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name .' 2>&1', $output, $return);
+        exec ('env $(cat .env && cat .env.ci) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {

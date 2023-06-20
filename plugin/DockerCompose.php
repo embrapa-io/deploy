@@ -5,14 +5,12 @@ class DockerCompose extends Orchestrator
     const DOCKER = '/usr/bin/docker';
     const DOCKER_COMPOSE = '/usr/bin/docker-compose';
 
-    static public function validate ($path, $cluster, $ports)
+    static public function validate ($path)
     {
-        self::checkSSHConnection ($cluster->host);
-
-        return self::checkDockerComposeFile ($path, $cluster->host, $ports);
+        return self::checkDockerComposeFile ($path);
     }
 
-    static public function deploy ($path, $cluster, $ports)
+    static public function deploy ($path)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -21,9 +19,7 @@ class DockerCompose extends Orchestrator
 
         unset ($return);
 
-        self::checkSSHConnection ($cluster->host);
-
-        $valid = self::checkDockerComposeFile ($path, $cluster->host, $ports);
+        $valid = self::checkDockerComposeFile ($path);
 
         if (!$valid)
             throw new Exception ('Invalid docker-compose.yaml file! Please, check configuration (volumes, ports, enviroment variables, etc)');
@@ -32,16 +28,16 @@ class DockerCompose extends Orchestrator
 
         echo "INFO > Trying to execute backup service before deploy...\n";
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' build --force-rm --no-cache backup'."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache backup'."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' build --force-rm --no-cache backup 2>&1', $output, $return);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache backup 2>&1', $output, $return);
 
         unset ($return);
         unset ($output);
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' run --rm --no-deps backup'."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' run --rm --no-deps backup'."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' run --rm --no-deps backup 2>&1', $output, $return);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' run --rm --no-deps backup 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -59,9 +55,9 @@ class DockerCompose extends Orchestrator
 
         echo "INFO > Creating a stack network named as '". $name ."' with Docker... \n";
 
-        echo 'COMMAND > DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER .' network create '. $name ."\n";
+        echo 'COMMAND > '. self::DOCKER .' network create '. $name ."\n";
 
-        exec ('DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER .' network create '. $name .' 2>&1', $output, $return);
+        exec (self::DOCKER .' network create '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
             echo implode ("\n", $output) ."\n";
@@ -71,9 +67,9 @@ class DockerCompose extends Orchestrator
 
         echo "INFO > Building application with Docker Compose... \n";
 
-        echo 'COMMAND > set -e && env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $?'."\n";
+        echo 'COMMAND > set -e && env $(cat .env.ci) '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $?'."\n";
 
-        passthru ('set -e && env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $? 2>&1', $return);
+        passthru ('set -e && env $(cat .env.ci) '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $? 2>&1', $return);
 
         if ($return !== 0)
             throw new Exception ('Error when buildings containers with Docker Compose');
@@ -83,9 +79,9 @@ class DockerCompose extends Orchestrator
 
         echo "INFO > Getting valid services (will ignore: ". implode (", ", self::CLI_SERVICES) .")... \n";
 
-        echo 'COMMAND > env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' config --services'."\n";
+        echo 'COMMAND > env $(cat .env.ci) '. self::DOCKER_COMPOSE .' config --services'."\n";
 
-        exec ('env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' config --services 2>&1', $services, $return);
+        exec ('env $(cat .env.ci) '. self::DOCKER_COMPOSE .' config --services 2>&1', $services, $return);
 
         if ($return !== 0)
             throw new Exception ('Error when getting services from docker-compose.yaml');
@@ -102,9 +98,9 @@ class DockerCompose extends Orchestrator
 
         echo "INFO > Starting application with Docker Compose... \n";
 
-        echo 'COMMAND > env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' start '. implode (' ', $services) ."\n";
+        echo 'COMMAND > env $(cat .env.ci) '. self::DOCKER_COMPOSE .' start '. implode (' ', $services) ."\n";
 
-        exec ('env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' start '. implode (' ', $services) .' 2>&1', $output, $return);
+        exec ('env $(cat .env.ci) '. self::DOCKER_COMPOSE .' start '. implode (' ', $services) .' 2>&1', $output, $return);
 
         echo implode ("\n", $output) ."\n";
 
@@ -112,73 +108,7 @@ class DockerCompose extends Orchestrator
             throw new Exception ('Error when starting containers with Docker Compose');
     }
 
-    static public function health ($cluster)
-    {
-        exec ('type '. self::DOCKER, $trash, $return);
-
-        if ($return !== 0)
-            throw new Exception ("Missing 'docker' command");
-
-        unset ($return);
-
-        self::checkSSHConnection ($cluster->host, 10);
-
-        exec ('DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER .' ps -a --format "{{.Names}}|{{.State}}|{{.Status}}|{{.Size}}|{{.CreatedAt}}|{{.RunningFor}}"', $output, $return);
-
-        if ($return !== 0)
-            throw new Exception ('Error on Docker command');
-
-        $services = [];
-
-        foreach ($output as $trash => $line)
-        {
-            $line = explode ('|', $line);
-
-            if (sizeof ($line) !== 6) continue;
-
-            $service = [];
-
-            $pieces = explode ('_', $line[0]);
-
-            if (sizeof ($pieces) < 3) continue;
-
-            if (in_array ($pieces [2], [ 'alpha', 'beta', 'release' ]))
-                $name = implode ('_', array_slice ($pieces, 3, sizeof ($pieces) - 4));
-            else
-            {
-                $aux = explode ('-', $pieces [2]);
-
-                $pieces [2] = $aux [0];
-
-                $name = implode ('_', array_slice ($aux, 1, sizeof ($aux) - 2));
-            }
-
-            $build = $pieces [0] .'/'. $pieces [1] .'@'. $pieces [2];
-
-            $service['state'] = $line[1];
-            $service['status'] = $line[2];
-
-            preg_match('/^[^\(]+\(([^\)]+)\)$/', $line[2], $out);
-
-            if (sizeof ($out) == 2) $service['healthy'] = $out[1];
-            else $service['healthy'] = 'undefined';
-
-            preg_match ('/^[^\(]+\(virtual ([^\)]+)\)$/', $line[3], $out);
-
-            if (sizeof ($out) == 2) $service['size'] = $out[1];
-            else $service['size'] = $line[3];
-
-            $service['created'] = (new DateTime($line[4]))->setTimezone(new DateTimeZone('America/Sao_Paulo'))->format('j/n/y G:i');
-
-            $service['running'] = $line[5];
-
-            $services[$build][$name] = $service;
-        }
-
-        return $services;
-    }
-
-    static public function checkDockerComposeFile ($folder, $host, $ports)
+    static public function checkDockerComposeFile ($folder)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -191,7 +121,7 @@ class DockerCompose extends Orchestrator
 
         chdir ($folder);
 
-        echo 'COMMAND > env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config'."\n";
+        echo 'COMMAND > env $(cat .env.ci) '. self::DOCKER_COMPOSE .' config'."\n";
 
         if (!file_exists ('.embrapa') || !is_dir ('.embrapa'))
         {
@@ -203,7 +133,7 @@ class DockerCompose extends Orchestrator
         $out = tempnam ('.embrapa', '_');
         $log = tempnam ('.embrapa', '_');
 
-        exec ('env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config > '. $out .' 2> '. $log, $trash, $return);
+        exec ('env $(cat .env.ci) '. self::DOCKER_COMPOSE .' config > '. $out .' 2> '. $log, $trash, $return);
 
         $output = file_exists ($log) && is_readable ($log) ? @file ($log) : [];
 
@@ -294,8 +224,6 @@ class DockerCompose extends Orchestrator
             return FALSE;
         }
 
-        $invalidPorts = [];
-
         foreach ($config ['services'] as $name => $service)
         {
             if (isset ($service ['ports']))
@@ -307,9 +235,6 @@ class DockerCompose extends Orchestrator
 
                         return FALSE;
                     }
-
-                    if (!in_array ((int) $port ['published'], $ports))
-                        $invalidPorts [] = $port ['published'];
                 }
 
             if (isset ($service ['volumes']))
@@ -322,18 +247,11 @@ class DockerCompose extends Orchestrator
                     }
         }
 
-        if (sizeof ($invalidPorts))
-        {
-            echo "ERROR > Trying to use PORTs that is not defined at application configuration: ". implode (", ", $invalidPorts) ."! \n";
-
-            return FALSE;
-        }
-
         echo "INFO > All published PORTs are valid! \n";
 
-        echo 'COMMAND > env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config --services'."\n";
+        echo 'COMMAND > env $(cat .env.ci) '. self::DOCKER_COMPOSE .' config --services'."\n";
 
-        exec ('env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config --services 2>&1', $services1, $return);
+        exec ('env $(cat .env.ci) '. self::DOCKER_COMPOSE .' config --services 2>&1', $services1, $return);
 
         echo "INFO > Checking if has CLI services starting in application deployment... ";
 
@@ -351,9 +269,9 @@ class DockerCompose extends Orchestrator
 
         echo "it's ok! \n";
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config --services'."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' config --services'."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config --services 2>&1', $services2, $return);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' config --services 2>&1', $services2, $return);
 
         $cli = self::CLI_SERVICES;
 
@@ -391,9 +309,9 @@ class DockerCompose extends Orchestrator
 
         echo "INFO > Stopping application with Docker Compose... \n";
 
-        echo 'COMMAND > env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' stop'."\n";
+        echo 'COMMAND > env $(cat .env.ci) '. self::DOCKER_COMPOSE .' stop'."\n";
 
-        exec ('env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' stop 2>&1', $output, $return);
+        exec ('env $(cat .env.ci) '. self::DOCKER_COMPOSE .' stop 2>&1', $output, $return);
 
         if (sizeof ($output)) echo implode ("\n", $output) ."\n";
 
@@ -416,9 +334,9 @@ class DockerCompose extends Orchestrator
 
         echo "INFO > Restarting application with Docker Compose... \n";
 
-        echo 'COMMAND > env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' restart'."\n";
+        echo 'COMMAND > env $(cat .env.ci) '. self::DOCKER_COMPOSE .' restart'."\n";
 
-        exec ('env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' restart 2>&1', $output, $return);
+        exec ('env $(cat .env.ci) '. self::DOCKER_COMPOSE .' restart 2>&1', $output, $return);
 
         if (sizeof ($output)) echo implode ("\n", $output) ."\n";
 
@@ -441,9 +359,9 @@ class DockerCompose extends Orchestrator
 
         echo "INFO > Trying to execute backup service...\n";
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' build --force-rm --no-cache backup'."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache backup'."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' build --force-rm --no-cache backup 2>&1', $output1, $return1);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache backup 2>&1', $output1, $return1);
 
         if ($return1 !== 0)
         {
@@ -452,9 +370,9 @@ class DockerCompose extends Orchestrator
             throw new Exception ("Backup service failed to BUILD");
         }
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' run --rm --no-deps backup'."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' run --rm --no-deps backup'."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' run --rm --no-deps backup 2>&1', $output2, $return2);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' run --rm --no-deps backup 2>&1', $output2, $return2);
 
         if ($return2 !== 0)
         {
@@ -479,9 +397,9 @@ class DockerCompose extends Orchestrator
 
         echo "INFO > Trying to execute sanitize service...\n";
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' build --force-rm --no-cache sanitize'."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache sanitize'."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' build --force-rm --no-cache sanitize 2>&1', $output1, $return1);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache sanitize 2>&1', $output1, $return1);
 
         if ($return1 !== 0)
         {
@@ -490,9 +408,9 @@ class DockerCompose extends Orchestrator
             throw new Exception ("Sanitize service failed to BUILD");
         }
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' run --rm --no-deps sanitize'."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' run --rm --no-deps sanitize'."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $cluster->host .'" '. self::DOCKER_COMPOSE .' run --rm --no-deps sanitize 2>&1', $output2, $return2);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' run --rm --no-deps sanitize 2>&1', $output2, $return2);
 
         if ($return2 !== 0)
         {

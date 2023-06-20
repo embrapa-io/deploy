@@ -64,6 +64,13 @@ require_once 'class/GitLab.php';
 require_once 'class/GitClient.php';
 require_once 'class/Controller.php';
 
+require_once 'plugin/Orchestrator.php';
+require_once 'plugin/DockerCompose.php';
+require_once 'plugin/DockerSwarm.php';
+
+if (!Orchestrator::exists (getenv ('ORCHESTRATOR')))
+	die ("CRITICAL > Orchestrator '". getenv ('ORCHESTRATOR') ."' defined in '.env' is not valid! \n");
+
 $_path = getcwd ();
 
 $builds = $_path . DIRECTORY_SEPARATOR .'apps'. DIRECTORY_SEPARATOR .'builds.json';
@@ -81,7 +88,7 @@ try
 
 	$_benchmark = time ();
 
-	file_put_contents ($_lock, '');
+	if (!$_verbose) file_put_contents ($_lock, '');
 
 	echo "INFO > Starting execution... \n\n";
 
@@ -89,11 +96,11 @@ try
 
 	Controller::singleton ()->deploy ();
 
-	unlink ($_lock);
+	try { @unlink ($_lock); } catch (Exception $e) {}
 
 	echo "FINISH > All done after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 
-	if (!$_verbose && !$_nothing) Log::info (ob_get_clean ());
+	if (!$_verbose && !$_nothing) Mail::singleton ()->send ($_build .' - RELEASE INFO', ob_get_clean ());
 
 	exit (0);
 }
@@ -108,7 +115,7 @@ try
 {
 	echo "FINISH > Stopped after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 
-	if (!$_verbose) Log::critical (ob_get_clean ());
+	if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE CRITICAL', ob_get_clean ());
 }
 catch (Exception $e)
 {}

@@ -156,7 +156,7 @@ foreach ($_builds as $trash => $_b)
 
 		echo "ERROR > Impossible to get refs to tag ". $_newer ['name'] ." (commit '". $_newer ['commit']['id'] ."')! ". $e->getMessage () ."! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
+		if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
 		continue;
 	}
@@ -178,7 +178,7 @@ foreach ($_builds as $trash => $_b)
 
 		echo "ERROR > New tag ". $_newer ['name'] ." has been not created from branch '". $_b->stage ."'! Please, delete this tag and re-create from correct branch. A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
+		if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
 		continue;
 	}
@@ -193,7 +193,7 @@ foreach ($_builds as $trash => $_b)
 	{
 		echo "ERROR > Impossible to get milestones! ". $e->getMessage () ."! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
+		if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
 		continue;
 	}
@@ -228,7 +228,7 @@ foreach ($_builds as $trash => $_b)
 
 		echo "ERROR > Impossibe to get repository settings ('.embrapa/settings.json'). ". $e->getMessage () ."! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
+		if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
 		continue;
 	}
@@ -268,7 +268,7 @@ foreach ($_builds as $trash => $_b)
 	{
 		echo "ERROR > Impossibe to load environment variables file: '". $_settings . DIRECTORY_SEPARATOR .".env'! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
+		if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
 		continue;
 	}
@@ -289,20 +289,20 @@ foreach ($_builds as $trash => $_b)
 
 		echo "ERROR > Impossibe to clone repository. ". $e->getMessage () ."! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
+		if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
 		continue;
 	}
 
 	try
 	{
-		($cluster->orchestrator)::deploy ($_path, $cluster, $_ports);
+		(self::singleton ()->orchestrator)::deploy ($_path);
 	}
 	catch (Exception $e)
 	{
 		echo "ERROR > Impossibe to deploy tag ". $_newer ['name'] .". ". $e->getMessage () ."! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
+		if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
 		continue;
 	}
@@ -313,6 +313,8 @@ foreach ($_builds as $trash => $_b)
 	}
 	catch (Exception $e)
 	{}
+
+	continue;
 
 	$broker->setBuildLastDeploy ($_b->project, $_b->app, $_b->stage, $_newer ['name']);
 
@@ -381,7 +383,7 @@ foreach ($_builds as $trash => $_b)
 		echo "\n";
 	}
 
-	if (!$_verbose) (new Mail)->send ($_build .' - RELEASE SUCCESS', ob_get_flush (), $_b->team);
+	if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE SUCCESS', ob_get_flush (), $_b->team);
 
 	echo "\n";
 }

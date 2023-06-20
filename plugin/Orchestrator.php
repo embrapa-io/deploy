@@ -24,13 +24,8 @@ abstract class Orchestrator
         return in_array ($name, self::$orchestrators);
     }
 
-    abstract public static function validate ($path, $cluster, $ports);
-    abstract public static function deploy ($path, $cluster, $ports);
-    abstract public static function health ($cluster);
-    abstract public static function restart ($path, $cluster);
-    abstract public static function undeploy ($path, $cluster);
-    abstract public static function backup ($path, $cluster);
-    abstract public static function sanitize ($path, $cluster);
+    abstract public static function validate ($path);
+    abstract public static function deploy ($path);
 
     public static function checkSSHConnection ($host, $timeout = 30)
     {
