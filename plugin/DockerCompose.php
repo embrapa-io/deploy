@@ -5,12 +5,12 @@ class DockerCompose extends Orchestrator
     const DOCKER = '/usr/bin/docker';
     const DOCKER_COMPOSE = '/usr/bin/docker-compose';
 
-    static public function validate ($path)
+    static public function validate ($path, $namespace)
     {
-        return self::checkDockerComposeFile ($path);
+        return self::checkDockerComposeFile ($path, $namespace);
     }
 
-    static public function deploy ($path)
+    static public function deploy ($path, $namespace)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -19,7 +19,7 @@ class DockerCompose extends Orchestrator
 
         unset ($return);
 
-        $valid = self::checkDockerComposeFile ($path);
+        $valid = self::checkDockerComposeFile ($path, $namespace);
 
         if (!$valid)
             throw new Exception ('Invalid docker-compose.yaml file! Please, check configuration (volumes, ports, enviroment variables, etc)');
@@ -51,13 +51,11 @@ class DockerCompose extends Orchestrator
         unset ($return);
         unset ($output);
 
-        $name = basename ($path);
+        echo "INFO > Creating a stack network named as '". $namespace ."' with Docker... \n";
 
-        echo "INFO > Creating a stack network named as '". $name ."' with Docker... \n";
+        echo 'COMMAND > '. self::DOCKER .' network create '. $namespace ."\n";
 
-        echo 'COMMAND > '. self::DOCKER .' network create '. $name ."\n";
-
-        exec (self::DOCKER .' network create '. $name .' 2>&1', $output, $return);
+        exec (self::DOCKER .' network create '. $namespace .' 2>&1', $output, $return);
 
         if ($return !== 0)
             echo implode ("\n", $output) ."\n";
@@ -108,7 +106,7 @@ class DockerCompose extends Orchestrator
             throw new Exception ('Error when starting containers with Docker Compose');
     }
 
-    static public function checkDockerComposeFile ($folder)
+    static public function checkDockerComposeFile ($folder, $namespace)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -176,8 +174,6 @@ class DockerCompose extends Orchestrator
             return FALSE;
         }
 
-        $prefix = basename ($folder);
-
         $volumes = [];
 
         if (array_key_exists ('volumes', $config) && is_array ($config ['volumes']))
@@ -195,7 +191,7 @@ class DockerCompose extends Orchestrator
 
                 array_pop ($aux);
 
-                if (implode ('_', $aux) != $prefix)
+                if (implode ('_', $aux) != $namespace)
                 {
                     echo "ERROR > Volume '". $name ."' is pointing to '". $volume ['name'] ."'! All mounted drivers needed to inside of application context. \n";
 
@@ -210,9 +206,9 @@ class DockerCompose extends Orchestrator
 
         if (!array_key_exists ('networks', $config) || !is_array ($config ['networks']) || sizeof ($config ['networks']) !== 1 ||
             !array_key_exists ('external', $config ['networks'][array_key_first ($config ['networks'])]) || !(bool) $config ['networks'][array_key_first ($config ['networks'])]['external'] ||
-            !array_key_exists ('name', $config ['networks'][array_key_first ($config ['networks'])]) || trim ($config ['networks'][array_key_first ($config ['networks'])]['name']) !== $prefix)
+            !array_key_exists ('name', $config ['networks'][array_key_first ($config ['networks'])]) || trim ($config ['networks'][array_key_first ($config ['networks'])]['name']) !== $namespace)
         {
-            echo "ERROR > Is needed to exists ONE, and only one, external network to entire stack in 'docker-compose.yaml'. Must be named '". $prefix ."'. See https://docs.docker.com/compose/networking/ for more info. \n";
+            echo "ERROR > Is needed to exists ONE, and only one, external network to entire stack in 'docker-compose.yaml'. Must be named '". $namespace ."'. See https://docs.docker.com/compose/networking/ for more info. \n";
 
             return FALSE;
         }

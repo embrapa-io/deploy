@@ -100,7 +100,7 @@ try
 
 	echo "FINISH > All done after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 
-	if (!$_verbose && !$_nothing) Mail::singleton ()->send ($_build .' - RELEASE INFO', ob_get_clean ());
+	if (!$_verbose && !$_nothing) Mail::singleton ()->send ('SUCCESS EXECUTION of Releaser Script', ob_get_clean ());
 
 	exit (0);
 }
@@ -115,7 +115,7 @@ try
 {
 	echo "FINISH > Stopped after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 
-	if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE CRITICAL', ob_get_clean ());
+	if (!$_verbose) Mail::singleton ()->send ('CRITICAL ERROR of Releaser Script', ob_get_clean ());
 }
 catch (Exception $e)
 {}

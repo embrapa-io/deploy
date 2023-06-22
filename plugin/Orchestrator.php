@@ -24,8 +24,8 @@ abstract class Orchestrator
         return in_array ($name, self::$orchestrators);
     }
 
-    abstract public static function validate ($path);
-    abstract public static function deploy ($path);
+    abstract public static function validate ($path, $namespace);
+    abstract public static function deploy ($path, $namespace);
 
     public static function checkSSHConnection ($host, $timeout = 30)
     {

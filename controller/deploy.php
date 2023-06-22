@@ -2,6 +2,11 @@
 
 global $_verbose, $_nothing, $_builds, $_path;
 
+$_data = $_path . DIRECTORY_SEPARATOR .'data';
+
+if (!file_exists ($_data) || !is_dir ($_data))
+	throw new Exception ('Volume for data storage is not mounted!');
+
 $git = GitLab::singleton ();
 
 $builds = [ 'alpha', 'beta', 'release' ];
@@ -113,7 +118,7 @@ foreach ($_builds as $trash => $_b)
 		continue;
 	}
 
-	$version = $_settings . DIRECTORY_SEPARATOR .'VERSION';
+	$version = $_data . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app]) . DIRECTORY_SEPARATOR .'VERSION'. DIRECTORY_SEPARATOR . $_b->stage;
 
 	try
 	{
@@ -275,11 +280,11 @@ foreach ($_builds as $trash => $_b)
 
 	echo "INFO > Trying to clone app... ";
 
-	unset ($_path);
+	unset ($clone);
 
 	try
 	{
-		$_path = GitClient::singleton ()->cloneTag ($_b->project, $_b->app, $_b->stage, $_newer ['name'], $env, $ci, $bk);
+		$clone = GitClient::singleton ()->cloneTag ($_b->project, $_b->app, $_b->stage, $_newer ['name'], $env, $ci, $bk, $_path);
 
 		echo "done! \n";
 	}
@@ -296,7 +301,7 @@ foreach ($_builds as $trash => $_b)
 
 	try
 	{
-		(self::singleton ()->orchestrator)::deploy ($_path);
+		(self::singleton ()->orchestrator)::deploy ($clone, implode ('_', [$_b->project, $_b->app, $_b->stage]));
 	}
 	catch (Exception $e)
 	{
@@ -307,83 +312,11 @@ foreach ($_builds as $trash => $_b)
 		continue;
 	}
 
-	try
-	{
-		GitClient::singleton ()->delete ($_path);
-	}
-	catch (Exception $e)
-	{}
-
-	continue;
-
-	$broker->setBuildLastDeploy ($_b->project, $_b->app, $_b->stage, $_newer ['name']);
+	file_put_contents ($version, $_newer ['name'], LOCK_EX);
 
 	echo "SUCCESS > All done! Version '". $_newer ['name'] ."' in '". $_b->stage ."' stage of application '". $_b->project ."/". $_b->app ."' is DEPLOYED! \n";
 
-	echo "INFO > The following PORTs have been exposed: \n";
-
-	$urls = [];
-
-	foreach ($_ports as $trash => $port)
-	{
-		$urls [] = "http://". $cluster->host .":". $port;
-
-		echo end ($urls);
-
-		if (isset ($_attrs->aliases [$port]) && trim ($_attrs->aliases [$port]) !== '' && filter_var (gethostbyname ($_attrs->aliases [$port]), FILTER_VALIDATE_IP))
-		{
-			$broker->setAlias ($_attrs->aliases [$port], $cluster->host .':'. $port);
-
-			$urls [] = "https://". $_attrs->aliases [$port];
-
-			echo " [". end ($urls) ."]";
-		}
-
-		if (isset ($_attrs->domains [$port]) && trim ($_attrs->domains [$port]) !== '')
-		{
-			$aux = explode ('|', $_attrs->domains [$port]);
-
-			if (sizeof ($aux) == 2 && trim ($aux[0]) != '')
-			{
-				$subdomain = $_b->project;
-
-				if (trim ($aux[1]) != '') $subdomain .= '-'. trim ($aux[1]);
-
-				$subdomain .= '.'. $aux[0];
-
-				if (filter_var (gethostbyname ($subdomain), FILTER_VALIDATE_IP))
-				{
-					$broker->setAlias ($subdomain, $cluster->host .':'. $port);
-
-					$urls [] = "https://". $subdomain;
-
-					echo " [". end ($urls) ."]";
-				}
-			}
-		}
-
-		if (isset ($_attrs->urls [$port]) && trim ($_attrs->urls [$port]) !== '')
-		{
-			$aux = explode ('|', $_attrs->urls [$port]);
-
-			if (sizeof ($aux) == 2 && trim ($aux[0]) != '' && filter_var (gethostbyname ($aux[0]), FILTER_VALIDATE_IP))
-			{
-				$subpath = $_b->project;
-
-				if (trim ($aux[1]) != '') $subpath .= '-'. trim ($aux[1]);
-
-				$broker->setSubpath ($aux[0] .'|'. $subpath, $cluster->host .':'. $port);
-
-				$urls [] = "https://". $aux[0] ."/". $subpath;
-
-				echo " [". end ($urls) ."]";
-			}
-		}
-
-		echo "\n";
-	}
-
-	if (!$_verbose) Mail::singleton ()->send ($_build .' - RELEASE SUCCESS', ob_get_flush (), $_b->team);
+	if (!$_verbose) Mail::singleton ()->send ($_build .' '. $_newer ['name'] .' - RELEASE SUCCESS', ob_get_flush (), $_b->team);
 
 	echo "\n";
 }

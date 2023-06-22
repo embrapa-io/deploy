@@ -104,14 +104,14 @@ class DockerSwarm extends Orchestrator
         return array_merge ([ $cluster->host ], $managers, $workers);
     }
 
-    static public function validate ($path)
+    static public function validate ($path, $namespace)
     {
         $manager = self::getUpManagerNode ($cluster);
 
         return self::checkDockerSwarmFile ($path, $manager, $ports);
     }
 
-    static public function deploy ($path)
+    static public function deploy ($path, $namespace)
     {
         $manager = self::getUpManagerNode ($cluster);
 
@@ -133,7 +133,7 @@ class DockerSwarm extends Orchestrator
             echo "WARNING > Backup service failed: ". $e->getMessage () ."! \n";
         }
 
-        $name = basename ($path);
+        // $name = basename ($path);
 
         echo "INFO > Creating a stack network named as '". $name ."' with Docker... \n";
 
@@ -430,7 +430,7 @@ class DockerSwarm extends Orchestrator
             return FALSE;
         }
 
-        $prefix = basename ($folder);
+        // $prefix = basename ($folder);
 
         $volumes = [];
 
@@ -649,7 +649,7 @@ class DockerSwarm extends Orchestrator
 
         chdir ($path);
 
-        $name = basename ($path);
+        // $name = basename ($path);
 
         echo "INFO > Checking if stack ". $name ." is deployed...\n";
 
@@ -683,7 +683,7 @@ class DockerSwarm extends Orchestrator
 
         chdir ($path);
 
-        $name = basename ($path);
+        // $name = basename ($path);
 
         echo "INFO > Checking if stack ". $name ." is deployed...\n";
 
@@ -765,7 +765,7 @@ class DockerSwarm extends Orchestrator
 
         chdir ($path);
 
-        $prefix = basename ($path);
+        // $prefix = basename ($path);
 
         if (!file_exists ('.embrapa/swarm/cli/'. $service .'.yaml'))
             throw new Exception ("File '.embrapa/swarm/cli/". $service .".yaml' not found");
