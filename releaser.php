@@ -24,6 +24,38 @@ if (!`which git`)
 if (!(int) ini_get ('register_argc_argv'))
 	die ("CRITICAL > This is a command-line script! You must enable 'register_argc_argv' directive. \n");
 
+$_operations = [
+	'validate' 	=> [ 'Validate builds (i.e., project app stages like alpha, beta or release)', 'Controller::validate' ],
+	'deploy' 	=> [ 'Re-validate, prepare (i.e., create network) and deploy builds', 'Controller::deploy' ],
+	'stop' 		=> [ 'Stop running containers', 'Controller::stop' ],
+	'restart' 	=> [ 'Restart running containers', 'Controller::restart' ],
+	'backup' 	=> [ 'Generate builds backup', 'Controller::backup' ],
+	'cleanup' 	=> [ 'Delete backups older than one week', 'Controller::cleanup' ],
+	'sanitize'	=> [ 'Run periodically sanitize proccess', 'Controller::sanitize' ]
+];
+
+if ($argc != 3 || !array_key_exists ($argv [1], $_operations))
+{
+	echo "\n";
+
+	echo "Usage: php releaser.php [OPERATION] [BUILDS] \n\n";
+
+	echo "Operations: \n";
+
+	foreach ($_operations as $op => $array)
+		echo "  ". str_pad ($op, 12) . $array [0] ."\n";
+
+	echo "\n";
+
+	echo "Builds: \n";
+
+	echo "Needs to be a list, comma sepparated, where each build is in format 'project/app@stage'. \n\n";
+
+	echo "Example: php releaser.php backup project-a/app1@beta,project-b/web@release,project-a/app2@alpha \n";
+
+	exit;
+}
+
 $vars = [
 	'SERVER',
 	'ORCHESTRATOR',
@@ -45,7 +77,10 @@ foreach ($vars as $trash => $var)
 if (sizeof ($unsetted))
 	die ("CRITICAL > Required environment variables are not setted: ". implode (', ', $unsetted) ."! \n");
 
-$_verbose = (bool) getenv ('VERBOSE');
+if (in_array (strtolower (getenv ('VERBOSE')), [ '0', 'no', 'false' ]))
+	$_verbose = FALSE;
+else
+	$_verbose = TRUE;
 
 $_lock = '/app/data/.lock';
 
@@ -78,7 +113,29 @@ $builds = $_path . DIRECTORY_SEPARATOR .'apps'. DIRECTORY_SEPARATOR .'builds.jso
 if (!file_exists ($builds) || !is_readable ($builds))
 	die ("CRITICAL > Is needed configure builds of apps to deploy in file '". $builds ."'! \n");
 
-$_builds = json_decode (file_get_contents ($builds));
+$_builds = [];
+
+$loaded = json_decode (file_get_contents ($builds));
+
+$slice = explode (',', $argv [2]);
+
+$all = sizeof ($slice) == 1 && trim ($slice [0]) == '--all' ? TRUE : FALSE;
+
+foreach ($loaded as $trash => $b)
+{
+	$build  = $b->project .'/'. $b->app .'@'. $b->stage;
+
+	if ($all || in_array ($build, $slice))
+	{
+		if (array_key_exists ($build, $_builds))
+			die ("CRITICAL > The build '". $build ."' was configured twice! \n");
+
+		$_builds [$build] = $b;
+	}
+}
+
+if (!sizeof ($_builds))
+	die ("CRITICAL > No builds to deploy! Check settings file (apps/builds.json). \n");
 
 set_error_handler ('handleError');
 
@@ -94,7 +151,9 @@ try
 
 	$_nothing = TRUE;
 
-	Controller::singleton ()->deploy ();
+	$function = $_operations [$argv [1]][1];
+
+	call_user_func_array ($function, []);
 
 	try { @unlink ($_lock); } catch (Exception $e) {}
 

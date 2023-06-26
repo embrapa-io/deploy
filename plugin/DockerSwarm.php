@@ -643,7 +643,7 @@ class DockerSwarm extends Orchestrator
         return TRUE;
     }
 
-    static public function undeploy ($path, $cluster)
+    static public function stop ($path)
     {
         $manager = self::getUpManagerNode ($cluster);
 
@@ -677,7 +677,7 @@ class DockerSwarm extends Orchestrator
         }
     }
 
-    static public function restart ($path, $cluster)
+    static public function restart ($path)
     {
         $manager = self::getUpManagerNode ($cluster);
 

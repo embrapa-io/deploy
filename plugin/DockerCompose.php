@@ -290,7 +290,7 @@ class DockerCompose extends Orchestrator
         return TRUE;
     }
 
-    static public function undeploy ($path, $cluster)
+    static public function stop ($path)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -298,8 +298,6 @@ class DockerCompose extends Orchestrator
             throw new Exception ("Missing 'docker-compose' command");
 
         unset ($return);
-
-        self::checkSSHConnection ($cluster->host);
 
         chdir ($path);
 
@@ -315,7 +313,7 @@ class DockerCompose extends Orchestrator
             throw new Exception ('Error when trying to stop containers with Docker Compose');
     }
 
-    static public function restart ($path, $cluster)
+    static public function restart ($path)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -323,8 +321,6 @@ class DockerCompose extends Orchestrator
             throw new Exception ("Missing 'docker-compose' command");
 
         unset ($return);
-
-        self::checkSSHConnection ($cluster->host);
 
         chdir ($path);
 

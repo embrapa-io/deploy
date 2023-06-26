@@ -78,6 +78,16 @@ class Controller
         require self::PATH .'deploy.php';
     }
 
+    static public function stop ()
+    {
+        require self::PATH .'stop.php';
+    }
+
+    static public function restart ()
+    {
+        require self::PATH .'restart.php';
+    }
+
     static protected function score ($stage, $version)
     {
         if (!preg_match (self::VERSION_REGEX [$stage], $version, $matches)) return 0;

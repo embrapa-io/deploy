@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: ./docker/daemon/Dockerfile
       args:
-        DEBUG: ${DEBUG}
+        DAEMON: ${DAEMON}
         SCHEDULER_MINUTES: ${SCHEDULER_MINUTES}
     restart: unless-stopped
     privileged: true

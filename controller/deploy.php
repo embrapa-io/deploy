@@ -9,15 +9,11 @@ if (!file_exists ($_data) || !is_dir ($_data))
 
 $git = GitLab::singleton ();
 
-$builds = [ 'alpha', 'beta', 'release' ];
-
 echo "INFO > Checking status of all ". sizeof ($_builds) ." builds configured... \n\n";
 
-foreach ($_builds as $trash => $_b)
+foreach ($_builds as $_build => $_b)
 {
 	if (!$_b->active) continue;
-
-	$_build = $_b->project .'/'. $_b->app .'@'. $_b->stage;
 
 	echo "INFO > Checking if build '". $_build ."' is correctly configured... \n";
 
@@ -126,6 +122,10 @@ foreach ($_builds as $trash => $_b)
 	}
 	catch (Exception $e)
 	{
+		$aux = dirname ($version);
+
+		if (!file_exists ($aux) || !is_dir ($aux)) mkdir ($aux, 0777, TRUE);
+
 		$_last = NULL;
 	}
 

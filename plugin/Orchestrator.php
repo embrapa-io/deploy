@@ -26,6 +26,8 @@ abstract class Orchestrator
 
     abstract public static function validate ($path, $namespace);
     abstract public static function deploy ($path, $namespace);
+    abstract public static function stop ($path);
+    abstract public static function restart ($path);
 
     public static function checkSSHConnection ($host, $timeout = 30)
     {
