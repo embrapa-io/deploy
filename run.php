@@ -30,7 +30,6 @@ $_operations = [
 	'stop' 		=> [ 'Stop running containers', 'Controller::stop' ],
 	'restart' 	=> [ 'Restart running containers', 'Controller::restart' ],
 	'backup' 	=> [ 'Generate builds backup', 'Controller::backup' ],
-	'cleanup' 	=> [ 'Delete backups older than one week', 'Controller::cleanup' ],
 	'sanitize'	=> [ 'Run periodically sanitize proccess', 'Controller::sanitize' ]
 ];
 

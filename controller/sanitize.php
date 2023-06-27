@@ -7,7 +7,7 @@ $_data = $_path . DIRECTORY_SEPARATOR .'data';
 if (!file_exists ($_data) || !is_dir ($_data))
 	throw new Exception ('Volume for data storage is not mounted!');
 
-echo "INFO > Checking status of ". sizeof ($_builds) ." build(s) to STOP... \n";
+echo "INFO > Checking status of ". sizeof ($_builds) ." build(s) to SANITIZE... \n";
 
 foreach ($_builds as $_build => $_b)
 {
@@ -51,20 +51,18 @@ foreach ($_builds as $_build => $_b)
 		continue;
 	}
 
-	echo "INFO > Stopping version '". $_last ."'... \n";
+	echo "INFO > Sanitizing version '". $_last ."'... \n";
 
 	try
 	{
-		(self::singleton ()->orchestrator)::stop ($clone);
+		(self::singleton ()->orchestrator)::sanitize ($clone);
 	}
 	catch (Exception $e)
 	{
-		echo "ERROR > Impossibe to undeploy version/tag '". $_last ."'. ". $e->getMessage () ."! \n\n";
+		echo "ERROR > Impossibe to sanitize build. ". $e->getMessage () ."! \n\n";
 
 		continue;
 	}
 
-	echo "SUCCESS > Done! Version '". $_last ."' in '". $_b->stage ."' stage of application '". $_b->project ."/". $_b->app ."' is UNDEPLOYED and OFFLINE! \n";
-
-	echo "INFO > To reactivate the application, please, use 'restart' operation or commit a new tag in Git. \n";
+	echo "SUCCESS > All done! The version '". $_last ."' of build '". $_build ."' was successfully sanitized! \n";
 }

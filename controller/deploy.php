@@ -163,7 +163,7 @@ foreach ($_builds as $_build => $_b)
 	{
 		echo "error! \n";
 
-		echo "ERROR > Impossible to get refs to tag ". $_newer ['name'] ." (commit '". $_newer ['commit']['id'] ."')! ". $e->getMessage () ."! A new attempt will be made. \n\n";
+		echo "ERROR > Impossible to get refs to tag ". $_newer ['name'] ." (commit '". $_newer ['commit']['id'] ."')! ". $e->getMessage () ."! \n\n";
 
 		if ($_daemon) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
@@ -185,7 +185,7 @@ foreach ($_builds as $_build => $_b)
 	{
 		echo "error! \n";
 
-		echo "ERROR > New tag ". $_newer ['name'] ." has been not created from branch '". $_b->stage ."'! Please, delete this tag and re-create from correct branch. A new attempt will be made. \n\n";
+		echo "ERROR > New tag ". $_newer ['name'] ." has been not created from branch '". $_b->stage ."'! Please, delete this tag and re-create from correct branch. \n\n";
 
 		if ($_daemon) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
@@ -200,7 +200,7 @@ foreach ($_builds as $_build => $_b)
 	}
 	catch (Exception $e)
 	{
-		echo "ERROR > Impossible to get milestones! ". $e->getMessage () ."! A new attempt will be made. \n\n";
+		echo "ERROR > Impossible to get milestones! ". $e->getMessage () ."! \n\n";
 
 		if ($_daemon) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
@@ -235,7 +235,7 @@ foreach ($_builds as $_build => $_b)
 	{
 		echo "error! \n";
 
-		echo "ERROR > Impossibe to get repository settings ('.embrapa/settings.json'). ". $e->getMessage () ."! A new attempt will be made. \n\n";
+		echo "ERROR > Impossibe to get repository settings ('.embrapa/settings.json'). ". $e->getMessage () ."! \n\n";
 
 		if ($_daemon) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
@@ -275,7 +275,7 @@ foreach ($_builds as $_build => $_b)
 	}
 	catch (Exception $e)
 	{
-		echo "ERROR > Impossibe to load environment variables file: '". $_settings . DIRECTORY_SEPARATOR .".env'! A new attempt will be made. \n\n";
+		echo "ERROR > Impossibe to load environment variables file: '". $_settings . DIRECTORY_SEPARATOR .".env'! \n\n";
 
 		if ($_daemon) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
@@ -305,7 +305,7 @@ foreach ($_builds as $_build => $_b)
 	{
 		echo "error! \n";
 
-		echo "ERROR > Impossibe to clone repository. ". $e->getMessage () ."! A new attempt will be made. \n\n";
+		echo "ERROR > Impossibe to clone repository. ". $e->getMessage () ."! \n\n";
 
 		if ($_daemon) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
@@ -318,7 +318,7 @@ foreach ($_builds as $_build => $_b)
 	}
 	catch (Exception $e)
 	{
-		echo "ERROR > Impossibe to deploy tag ". $_newer ['name'] .". ". $e->getMessage () ."! A new attempt will be made. \n\n";
+		echo "ERROR > Impossibe to deploy tag ". $_newer ['name'] .". ". $e->getMessage () ."! \n\n";
 
 		if ($_daemon) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 

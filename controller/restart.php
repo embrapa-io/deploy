@@ -51,6 +51,8 @@ foreach ($_builds as $_build => $_b)
 		continue;
 	}
 
+	echo "INFO > Restarting version '". $_last ."'... \n";
+
 	try
 	{
 		(self::singleton ()->orchestrator)::restart ($clone);

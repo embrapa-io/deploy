@@ -739,14 +739,14 @@ class DockerSwarm extends Orchestrator
         }
     }
 
-    static public function backup ($path, $cluster)
+    static public function backup ($path)
     {
         $manager = self::getUpManagerNode ($cluster);
 
         self::buildAndRunCliService ('backup', $manager, $path);
     }
 
-    static public function sanitize ($path, $cluster)
+    static public function sanitize ($path)
     {
         $manager = self::getUpManagerNode ($cluster);
 

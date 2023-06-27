@@ -336,7 +336,7 @@ class DockerCompose extends Orchestrator
             throw new Exception ('Error when trying to restart containers with Docker Compose');
     }
 
-    static public function backup ($path, $cluster)
+    static public function backup ($path)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -344,8 +344,6 @@ class DockerCompose extends Orchestrator
             throw new Exception ("Missing 'docker-compose' command");
 
         unset ($return);
-
-        self::checkSSHConnection ($cluster->host);
 
         chdir ($path);
 
@@ -374,7 +372,7 @@ class DockerCompose extends Orchestrator
         }
     }
 
-    static public function sanitize ($path, $cluster)
+    static public function sanitize ($path)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -382,8 +380,6 @@ class DockerCompose extends Orchestrator
             throw new Exception ("Missing 'docker-compose' command");
 
         unset ($return);
-
-        self::checkSSHConnection ($cluster->host);
 
         chdir ($path);
 
