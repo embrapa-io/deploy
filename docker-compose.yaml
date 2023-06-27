@@ -1,12 +1,11 @@
 version: '3.9'
 
 services:
-  daemon:
+  releaser:
     build:
       context: .
-      dockerfile: ./docker/daemon/Dockerfile
+      dockerfile: ./docker/releaser/Dockerfile
       args:
-        DAEMON: ${DAEMON}
         SCHEDULER_MINUTES: ${SCHEDULER_MINUTES}
     restart: unless-stopped
     privileged: true
@@ -21,12 +20,15 @@ services:
       - SMTP_SECURE
       - LOG_MAIL
       - LOCK_LIFETIME_MINUTES
+      - AUTO_DEPLOY
+      - AUTO_BACKUP
+      - AUTO_SANITIZE
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - .:/app
       - /app/vendor
     healthcheck:
-      test: php -l /app/releaser.php || exit 1
+      test: php -l /app/run.php || exit 1
       interval: 10s
       timeout: 10s
       start_period: 5s

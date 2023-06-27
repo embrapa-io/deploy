@@ -1,9 +1,0 @@
-#!/bin/sh
-
-if [ -z "${DAEMON}" ] || [ "${DAEMON}" -ne 1 ]; then
-  exit 0
-fi
-
-export VERBOSE=0
-
-/usr/local/bin/php /app/releaser.php deploy --all >> /dev/null 2>&1

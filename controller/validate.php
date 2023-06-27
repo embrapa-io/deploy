@@ -1,6 +1,6 @@
 <?php
 
-global $_verbose, $_nothing;
+global $_daemon, $_nothing;
 
 $git = GitLab::singleton ();
 $broker = Broker::singleton ();
@@ -17,7 +17,7 @@ foreach ($builds as $_build => $status)
 
 	$_nothing = FALSE;
 
-	if (!$_verbose) ob_start ();
+	if ($_daemon) ob_start ();
 
 	echo "INFO > Starting VALIDATE proccess to build '". $_build ."'... \n";
 
@@ -34,7 +34,7 @@ foreach ($builds as $_build => $status)
 
 		$broker->setBuildStatus ($_build, 'INVALID');
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, [], 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, [], 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -52,7 +52,7 @@ foreach ($builds as $_build => $status)
 	{
 		echo "ERROR > Project '". $_b->project ."' not created yet! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, [], 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, [], 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -83,7 +83,7 @@ foreach ($builds as $_build => $status)
 	{
 		echo "ERROR > Repository '". $_b->project .'/'. $_b->app ."' not created yet! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -113,7 +113,7 @@ foreach ($builds as $_build => $status)
 
 		echo "ERROR > Impossibe to get repository settings ('.embrapa/settings.json'). ". $e->getMessage () ."! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -135,7 +135,7 @@ foreach ($builds as $_build => $status)
 
 		$broker->setBuildStatus ($_build, 'INVALID');
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -146,7 +146,7 @@ foreach ($builds as $_build => $status)
 
 		$broker->setBuildStatus ($_build, 'INVALID');
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -155,7 +155,7 @@ foreach ($builds as $_build => $status)
 	{
 		echo "ERROR > Invalid JSON: attribute 'boilerplate' not found or empty. A new attempt will be made! \n\n";
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -177,7 +177,7 @@ foreach ($builds as $_build => $status)
 
 		$broker->setBuildStatus ($_build, 'INVALID');
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -188,7 +188,7 @@ foreach ($builds as $_build => $status)
 
 		$broker->setBuildStatus ($_build, 'INVALID');
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -213,7 +213,7 @@ foreach ($builds as $_build => $status)
 
 		$broker->setBuildStatus ($_build, 'INVALID');
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -256,7 +256,7 @@ foreach ($builds as $_build => $status)
 
 		$broker->setBuildStatus ($_build, 'INVALID');
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -276,7 +276,7 @@ foreach ($builds as $_build => $status)
 	{
 		echo "ERROR > Fail to load type '". $cluster->orchestrator ."'! See registered types in '". getenv ('GITLAB_URL') ."/io/boilerplate/metadata' at file 'orchestrators.json'. A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team)->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team)->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -293,7 +293,7 @@ foreach ($builds as $_build => $status)
 
 		$broker->setBuildStatus ($_build, 'INVALID');
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team)->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team)->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -306,7 +306,7 @@ foreach ($builds as $_build => $status)
 	{
 		echo "ERROR > Fail to get a valid Matomo's site ID to application! Please, check '". getenv ('MATOMO_URL') ."'. ". $e->getMessage () .". \n\n";
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team)->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team)->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -345,7 +345,7 @@ foreach ($builds as $_build => $status)
 
 		$broker->setBuildStatus ($_build, 'INVALID');
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -370,7 +370,7 @@ foreach ($builds as $_build => $status)
 
 		$broker->setBuildStatus ($_build, 'INVALID');
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -391,7 +391,7 @@ foreach ($builds as $_build => $status)
 
 		echo "ERROR > Impossibe to clone repository. ". $e->getMessage () ."! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -404,7 +404,7 @@ foreach ($builds as $_build => $status)
 	{
 		echo "ERROR > Impossibe to validate repository. ". $e->getMessage () ."! A new attempt will be made. \n\n";
 
-		if (!$_verbose) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
+		if ($_daemon) (new Mail)->getErrorLogger ($_build, $team, 'VALIDATE')->critical (ob_get_flush ());
 
 		continue;
 	}
@@ -423,7 +423,7 @@ foreach ($builds as $_build => $status)
 	else
 		echo "WARNING > All done, but build '". $_b->stage ."' to application '". $_b->project ."/". $_b->app ."' is INVALID! \n";
 
-	if (!$_verbose)
+	if ($_daemon)
 	{
 		if ($isValid) (new Mail)->getInfoLogger ($_build, $team, 'VALIDATE')->info (ob_get_flush ());
 		else (new Mail)->getWarningLogger ($_build, $team, 'VALIDATE')->warning (ob_get_flush ());

@@ -31,7 +31,7 @@ RUN set -ex \
     findmnt \
     sshfs \
     yaml-dev \
- && curl -L https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-linux-$(uname -m) > /usr/bin/docker-compose \
+ && curl -L https://github.com/docker/compose/releases/download/v2.19.0/docker-compose-linux-$(uname -m) > /usr/bin/docker-compose \
  && chmod +x /usr/bin/docker-compose \
  && pecl install yaml \
  && docker-php-ext-enable yaml \
@@ -40,20 +40,21 @@ RUN set -ex \
 
 FROM docker AS releaser
 
-ARG DAEMON
 ARG SCHEDULER_MINUTES
-
-ENV DAEMON $DAEMON
 
 WORKDIR /app
 
 COPY ./composer.* /app/
 
-COPY ./docker/daemon/release /etc/periodic/releaser/
+COPY ./docker/releaser/periodic/deploy /etc/periodic/deploy/
+COPY ./docker/releaser/periodic/backup /etc/periodic/daily/
+COPY ./docker/releaser/periodic/sanitize /etc/periodic/monthly/
 
 RUN set -ex \
- && echo "*/$SCHEDULER_MINUTES	*	*	*	*	run-parts /etc/periodic/releaser" >> /var/spool/cron/crontabs/root \
- && chmod a+x /etc/periodic/releaser/* \
+ && echo "*/$SCHEDULER_MINUTES	*	*	*	*	run-parts /etc/periodic/deploy" >> /var/spool/cron/crontabs/root \
+ && chmod a+x /etc/periodic/deploy/* \
+ && chmod a+x /etc/periodic/daily/* \
+ && chmod a+x /etc/periodic/monthly/* \
  && composer install --no-interaction -d /app
 
 ENTRYPOINT ["/sbin/tini", "--"]

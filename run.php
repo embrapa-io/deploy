@@ -34,11 +34,23 @@ $_operations = [
 	'sanitize'	=> [ 'Run periodically sanitize proccess', 'Controller::sanitize' ]
 ];
 
-if ($argc != 3 || !array_key_exists ($argv [1], $_operations))
+try
+{
+	if ($argc != 3) throw new Exception ();
+
+	$aux = explode (':', $argv [1]);
+
+	if (!array_key_exists (trim ($aux [0]), $_operations)) throw new Exception ();
+
+	$_operation = trim ($aux [0]);
+
+	$_daemon = sizeof ($aux) == 2 && trim ($aux [1]) == 'daemon' && in_array ($aux [0], [ 'deploy', 'backup', 'sanitize' ]) ? TRUE : FALSE;
+}
+catch (Exception $e)
 {
 	echo "\n";
 
-	echo "Usage: php releaser.php [OPERATION] [BUILDS] \n\n";
+	echo "Usage: php run.php [OPERATION] [BUILDS] \n\n";
 
 	echo "Operations: \n";
 
@@ -51,7 +63,7 @@ if ($argc != 3 || !array_key_exists ($argv [1], $_operations))
 
 	echo "Needs to be a list, comma sepparated, where each build is in format 'project/app@stage'. \n\n";
 
-	echo "Example: php releaser.php backup project-a/app1@beta,project-b/web@release,project-a/app2@alpha \n";
+	echo "Example: php run.php backup project-a/app1@beta,project-b/web@release,project-a/app2@alpha \n";
 
 	exit;
 }
@@ -77,15 +89,23 @@ foreach ($vars as $trash => $var)
 if (sizeof ($unsetted))
 	die ("CRITICAL > Required environment variables are not setted: ". implode (', ', $unsetted) ."! \n");
 
-if (in_array (strtolower (getenv ('VERBOSE')), [ '0', 'no', 'false' ]))
-	$_verbose = FALSE;
-else
-	$_verbose = TRUE;
+$_path = dirname (__FILE__);
 
-$_lock = '/app/data/.lock';
+$_data = $_path . DIRECTORY_SEPARATOR .'data';
 
-if (!$_verbose && file_exists ($_lock) && (!is_writable ($_lock) || time () - filemtime ($_lock) < getenv ('LOCK_LIFETIME_MINUTES') * 60))
-	die ("CRITICAL > The script is already being performed by a process started earlier! \n");
+if (!file_exists ($_data) || !is_dir ($_data))
+	die ("CRITICAL > Volume for data storage is not mounted! \n");
+
+$lifetimes = [
+	'deploy' => intval (getenv ('LOCK_LIFETIME_MINUTES')),
+	'backup' => 7 * 24 * 60,
+	'sanitize' => 15 * 24 * 60
+];
+
+$_lock = $_data . DIRECTORY_SEPARATOR .'.'. $_operation;
+
+if ($_daemon && file_exists ($_lock) && (!is_writable ($_lock) || time () - filemtime ($_lock) < $lifetimes [$_operation] * 60))
+	die ("CRITICAL > The operation '". $_operation ."' is already being performed by a process started earlier! \n");
 
 @unlink ($_lock);
 
@@ -105,8 +125,6 @@ require_once 'plugin/DockerSwarm.php';
 
 if (!Orchestrator::exists (getenv ('ORCHESTRATOR')))
 	die ("CRITICAL > Orchestrator '". getenv ('ORCHESTRATOR') ."' defined in '.env' is not valid! \n");
-
-$_path = getcwd ();
 
 $builds = $_path . DIRECTORY_SEPARATOR .'apps'. DIRECTORY_SEPARATOR .'builds.json';
 
@@ -141,17 +159,17 @@ set_error_handler ('handleError');
 
 try
 {
-	if (!$_verbose) ob_start ();
+	if ($_daemon) ob_start ();
 
 	$_benchmark = time ();
 
-	if (!$_verbose) file_put_contents ($_lock, '');
+	if ($_daemon) file_put_contents ($_lock, '');
 
 	echo "INFO > Starting execution... \n\n";
 
 	$_nothing = TRUE;
 
-	$function = $_operations [$argv [1]][1];
+	$function = $_operations [$_operation][1];
 
 	call_user_func_array ($function, []);
 
@@ -159,7 +177,7 @@ try
 
 	echo "FINISH > All done after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 
-	if (!$_verbose && !$_nothing) Mail::singleton ()->send ('SUCCESS EXECUTION of Releaser Script', ob_get_clean ());
+	if ($_daemon && !$_nothing) Mail::singleton ()->send ('SUCCESS EXECUTION of Releaser Script', ob_get_clean ());
 
 	exit (0);
 }
@@ -174,7 +192,7 @@ try
 {
 	echo "FINISH > Stopped after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 
-	if (!$_verbose) Mail::singleton ()->send ('CRITICAL ERROR of Releaser Script', ob_get_clean ());
+	if ($_daemon) Mail::singleton ()->send ('CRITICAL ERROR of Releaser Script', ob_get_clean ());
 }
 catch (Exception $e)
 {}
