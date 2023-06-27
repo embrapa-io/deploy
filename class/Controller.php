@@ -73,6 +73,11 @@ class Controller
 		return self::$single;
 	}
 
+    static public function validate ()
+    {
+        require self::PATH .'validate.php';
+    }
+
     static public function deploy ()
     {
         require self::PATH .'deploy.php';

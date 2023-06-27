@@ -9,11 +9,15 @@ if (!file_exists ($_data) || !is_dir ($_data))
 
 $git = GitLab::singleton ();
 
-echo "INFO > Checking status of all ". sizeof ($_builds) ." builds configured... \n\n";
+echo "INFO > Checking status of all ". sizeof ($_builds) ." builds configured... \n";
 
 foreach ($_builds as $_build => $_b)
 {
 	if (!$_b->active) continue;
+
+	echo "\n";
+
+	echo "### ". $_build ." ### \n\n";
 
 	echo "INFO > Checking if build '". $_build ."' is correctly configured... \n";
 
@@ -278,6 +282,15 @@ foreach ($_builds as $_build => $_b)
 		continue;
 	}
 
+	if (strpos ($env, ' ') !== false)
+	{
+		echo "ERROR > Environment variables can not contain spaces! Check file '". $_settings . DIRECTORY_SEPARATOR .'.env' ."'. \n\n";
+
+		if ($_daemon) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
+
+		continue;
+	}
+
 	echo "INFO > Trying to clone app... ";
 
 	unset ($clone);
@@ -317,6 +330,4 @@ foreach ($_builds as $_build => $_b)
 	echo "SUCCESS > All done! Version '". $_newer ['name'] ."' in '". $_b->stage ."' stage of application '". $_b->project ."/". $_b->app ."' is DEPLOYED! \n";
 
 	if ($_daemon) Mail::singleton ()->send ($_build .' '. $_newer ['name'] .' - RELEASE SUCCESS', ob_get_flush (), $_b->team);
-
-	echo "\n";
 }

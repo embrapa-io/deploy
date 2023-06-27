@@ -86,4 +86,39 @@ class GitClient
 
         return $clone;
     }
+
+    public function cloneBranch ($project, $app, $stage, $env, $ci, $bk)
+    {
+        $tmp = DIRECTORY_SEPARATOR .'tmp'. DIRECTORY_SEPARATOR .'validate';
+
+        if (!file_exists ($tmp)) mkdir ($tmp);
+
+        chdir ($tmp);
+
+        $clone = $tmp . DIRECTORY_SEPARATOR . $project .'_'. $app .'_'. $stage;
+
+        if (file_exists ($clone)) self::delete ($clone);
+
+        mkdir ($clone);
+
+        exec (self::GIT .' clone --depth 1 --verbose --branch '. $stage .' '. getenv ('GITLAB_SSH') .'/'. $project .'/'. $app .'.git '. $clone .' 2>&1', $output, $return);
+
+        if ($return !== 0)
+        {
+            self::delete ($clone);
+
+            throw new Exception ('Impossible to clone repository at branch "'. $stage .'"');
+        }
+
+        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env', $env, LOCK_EX) ||
+            !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.ci', $ci, LOCK_EX) ||
+            !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.cli', $bk, LOCK_EX))
+        {
+            self::delete ($clone);
+
+            throw new Exception ('Impossible to write .env, .env.ci and/or .env.cli files');
+        }
+
+        return $clone;
+    }
 }

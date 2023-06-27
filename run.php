@@ -165,7 +165,7 @@ try
 
 	if ($_daemon) file_put_contents ($_lock, '');
 
-	echo "INFO > Starting execution... \n\n";
+	echo "INFO > Starting execution... \n";
 
 	$_nothing = TRUE;
 
@@ -174,6 +174,8 @@ try
 	call_user_func_array ($function, []);
 
 	try { @unlink ($_lock); } catch (Exception $e) {}
+
+	echo "\n";
 
 	echo "FINISH > All done after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 

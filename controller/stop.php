@@ -7,10 +7,14 @@ $_data = $_path . DIRECTORY_SEPARATOR .'data';
 if (!file_exists ($_data) || !is_dir ($_data))
 	throw new Exception ('Volume for data storage is not mounted!');
 
-echo "INFO > Checking status of ". sizeof ($_builds) ." build(s) to STOP... \n\n";
+echo "INFO > Checking status of ". sizeof ($_builds) ." build(s) to STOP... \n";
 
 foreach ($_builds as $_build => $_b)
 {
+	echo "\n";
+
+	echo "### ". $_build ." ### \n\n";
+
 	echo "INFO > Checking if build '". $_build ."' has has been deployed... \n";
 
 	if (!preg_match ('/^[a-z0-9][a-z0-9-]+[a-z0-9]$/', $_b->project) || !preg_match ('/^[a-z0-9][a-z0-9-]+[a-z0-9]$/', $_b->app) || !in_array ($_b->stage, [ 'alpha', 'beta', 'release' ]))
@@ -60,5 +64,5 @@ foreach ($_builds as $_build => $_b)
 
 	echo "SUCCESS > Done! Version '". $_last ."' in '". $_b->stage ."' stage of application '". $_b->project ."/". $_b->app ."' is UNDEPLOYED and OFFLINE! \n";
 
-	echo "INFO > To reactivate the application, please, use 'restart' operation or commit a new tag in Git. \n\n";
+	echo "INFO > To reactivate the application, please, use 'restart' operation or commit a new tag in Git. \n";
 }
