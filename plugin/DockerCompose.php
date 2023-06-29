@@ -407,4 +407,19 @@ class DockerCompose extends Orchestrator
             throw new Exception ("Sanitize service failed to RUN");
         }
     }
+
+    static public function reference ()
+    {
+        $buffer  = "https://docs.docker.com/compose/reference/ \n\n";
+        $buffer .= "Attention! To execute the commands, you need inject environment variables of '.env.ci' file. \n";
+        $buffer .= "See examples bellow: \n\n";
+        $buffer .= "Removing stopped service containers: \n";
+        $buffer .= "env \$(cat .env.ci) docker-compose rm \n\n";
+        $buffer .= "Display the running processes: \n";
+        $buffer .= "env \$(cat .env.ci) docker-compose top \n\n";
+        $buffer .= "Access console (bash) of a service container named 'app': \n";
+        $buffer .= "env \$(cat .env.ci) docker-compose exec app bash \n";
+
+        return $buffer;
+    }
 }

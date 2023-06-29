@@ -36,86 +36,14 @@ class DockerSwarm extends Orchestrator
     const DOCKER = '/usr/bin/docker';
     const DOCKER_COMPOSE = '/usr/bin/docker-compose';
 
-    static private function getUpManagerNode ($cluster)
-    {
-        exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
-
-        if ($return !== 0)
-            throw new Exception ("Missing 'docker-compose' command");
-
-        unset ($return);
-
-        exec ('type '. self::DOCKER, $trash, $return);
-
-        if ($return !== 0)
-            throw new Exception ("Missing 'docker' command");
-
-        unset ($return);
-
-        $manager = NULL;
-
-        if (isset ($cluster->nodes->manager) && is_array ($cluster->nodes->manager))
-        {
-            $nodes = $cluster->nodes->manager;
-
-            array_unshift ($nodes, $cluster->host);
-
-            shuffle ($nodes);
-        }
-        else $nodes = [ $cluster->host ];
-
-        foreach ($nodes as $trash => $node)
-            try
-            {
-                self::checkSSHConnection ($node);
-
-                $manager = $node;
-
-                break;
-            }
-            catch (Exception $e)
-            {}
-
-        if ($manager === NULL)
-            throw new Exception ('All cluster manager nodes are unreachable');
-
-        exec (''. self::DOCKER ." info --format '{{.Swarm.ControlAvailable}}' 2>&1", $output, $return);
-
-        if ($return !== 0)
-        {
-            echo "--- \n";
-            echo implode ('', $output);
-            echo "--- \n";
-
-            throw new Exception ('Impossible to get node info to "'. $manager .'"');
-        }
-
-        if (!sizeof ($output) || $output[0] !== 'true')
-            throw new Exception ('Node "'. $manager .'" is not a manager');
-
-        return $manager;
-    }
-
-    static private function getAllNodes ($cluster)
-    {
-        $managers = isset ($cluster->nodes->manager) && is_array ($cluster->nodes->manager) ? $cluster->nodes->manager : [];
-        $workers = isset ($cluster->nodes->worker) && is_array ($cluster->nodes->worker) ? $cluster->nodes->worker : [];
-
-        return array_merge ([ $cluster->host ], $managers, $workers);
-    }
-
     static public function validate ($path, $namespace)
     {
-        $manager = self::getUpManagerNode ($cluster);
-
-        return self::checkDockerSwarmFile ($path, $manager, $ports);
+        return self::checkDockerSwarmFile ($path, $ports);
     }
 
     static public function deploy ($path, $namespace)
     {
-        $manager = self::getUpManagerNode ($cluster);
-
-        $valid = self::checkDockerSwarmFile ($path, $manager, $ports);
+        $valid = self::checkDockerSwarmFile ($path, $ports);
 
         if (!$valid)
             throw new Exception ('Invalid build (docker-compose.yaml) or deploy (.embrapa/swarm/deployment.yaml) files! Please, check configuration (volumes, ports, enviroment variables, etc)');
@@ -126,7 +54,7 @@ class DockerSwarm extends Orchestrator
 
         try
         {
-            self::buildAndRunCliService ('backup', $manager, $path);
+            self::buildAndRunCliService ('backup', $path);
         }
         catch (Exception $e)
         {
@@ -139,7 +67,7 @@ class DockerSwarm extends Orchestrator
 
         echo 'COMMAND > '. self::DOCKER .' network create -d overlay '. $name ."\n";
 
-        exec (''. self::DOCKER .' network create -d overlay '. $name .' 2>&1', $output, $return);
+        exec (self::DOCKER .' network create -d overlay '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
             echo implode ("\n", $output) ."\n";
@@ -179,7 +107,7 @@ class DockerSwarm extends Orchestrator
 
         echo 'COMMAND > '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
 
-        exec (''. self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
+        exec (self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
 
         if ($return !== 0)
             throw new Exception ("Impossible to check deployed stacks");
@@ -220,100 +148,7 @@ class DockerSwarm extends Orchestrator
         }
     }
 
-    static public function health ($cluster)
-    {
-        $nodes = self::getAllNodes ($cluster);
-
-        $manager = self::getUpManagerNode ($cluster);
-
-        echo 'COMMAND > '. self::DOCKER .' stack ls --format "{{.Name}}"'."\n";
-
-        exec (''. self::DOCKER .' stack ls --format "{{.Name}}"', $stacks, $return1);
-
-        if ($return1 !== 0)
-            throw new Exception ('Error to retrieve stacks from manager node "'. $manager .'"');
-
-        $services = [];
-
-        echo "INFO > Checking stacks health for: ". implode (", ", $stacks) ."... \n";
-
-        foreach ($stacks as $trash => $stack)
-        {
-            $pieces = explode ('_', $stack);
-
-            if (sizeof ($pieces) < 3) continue;
-
-            $build = $pieces [0] .'/'. $pieces [1] .'@'. $pieces [2];
-
-            unset ($return2);
-            unset ($srvcs);
-
-            echo 'COMMAND > '. self::DOCKER .' stack services --format "{{.Name}}|{{.Mode}}|{{.Replicas}}" '. $stack ."\n";
-
-            exec (''. self::DOCKER .' stack services --format "{{.Name}}|{{.Mode}}|{{.Replicas}}" '. $stack, $srvcs, $return2);
-
-            if ($return2 !== 0 || !sizeof ($srvcs))
-                continue;
-
-            foreach ($srvcs as $trash => $s)
-            {
-                $p = explode ('|', $s);
-
-                if (sizeof ($p) < 3) continue;
-
-                $name = $p[0];
-                $mode = $p[1];
-                $replicas = $p[2];
-
-                $aux = explode ('_', $name);
-
-                $srvc = array_pop ($aux);
-
-                if (in_array ($srvc, self::CLI_SERVICES)) continue;
-
-                foreach ($nodes as $trash => $node)
-                {
-                    unset ($return3);
-                    unset ($output);
-
-                    echo 'COMMAND > DOCKER_HOST="ssh://root@'. $node .'" '. self::DOCKER .' ps -f "name='. $name .'" --format "{{.Names}}|{{.State}}|{{.Status}}|{{.Size}}|{{.CreatedAt}}|{{.RunningFor}}"'."\n";
-
-                    exec ('DOCKER_HOST="ssh://root@'. $node .'" '. self::DOCKER .' ps -f "name='. $name .'" --format "{{.Names}}|{{.State}}|{{.Status}}|{{.Size}}|{{.CreatedAt}}|{{.RunningFor}}"', $output, $return3);
-
-                    if ($return3 !== 0 || !sizeof ($output)) continue;
-
-                    $line = explode ('|', $output[0]);
-
-                    if (sizeof ($line) !== 6) continue;
-
-                    $service = [];
-
-                    $service['state'] = $line[1];
-                    $service['status'] = $line[2] .' in '. $mode .' mode with '. $replicas .' replicas';
-
-                    preg_match('/^[^\(]+\(([^\)]+)\)$/', $line[2], $out);
-
-                    $service['healthy'] = sizeof ($out) == 2 ? $out[1] : 'undefined';
-
-                    preg_match ('/^[^\(]+\(virtual ([^\)]+)\)$/', $line[3], $out);
-
-                    $service['size'] = sizeof ($out) == 2 ? $out[1] : $line[3];
-
-                    $service['created'] = (new DateTime($line[4]))->setTimezone(new DateTimeZone('America/Sao_Paulo'))->format('j/n/y G:i');
-
-                    $service['running'] = $line[5];
-
-                    $services[$build][$srvc] = $service;
-
-                    break;
-                }
-            }
-        }
-
-        return $services;
-    }
-
-    static public function checkDockerSwarmFile ($folder, $host, $ports)
+    static public function checkDockerSwarmFile ($folder, $ports)
     {
         echo "INFO > Validating Docker Compose and Swarm files... \n";
 
@@ -326,9 +161,9 @@ class DockerSwarm extends Orchestrator
             return FALSE;
         }
 
-        echo 'COMMAND > env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config --profiles'."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config --profiles'."\n";
 
-        exec ('env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config --profiles 2>&1', $profiles, $return);
+        exec ('env $(cat .env && cat .env.ci) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config --profiles 2>&1', $profiles, $return);
 
         if ($return !== 0 || sizeof ($profiles) > 0)
         {
@@ -339,12 +174,12 @@ class DockerSwarm extends Orchestrator
 
         unset ($return);
 
-        echo 'COMMAND > env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config'."\n";
+        echo 'COMMAND > env $(cat .env.ci) '. self::DOCKER_COMPOSE .' config'."\n";
 
         $out1 = tempnam ('.embrapa', '_');
         $log1 = tempnam ('.embrapa', '_');
 
-        exec ('env $(cat .env.ci) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config > '. $out1 .' 2> '. $log1, $trash, $return);
+        exec ('env $(cat .env.ci) '. self::DOCKER_COMPOSE .' config > '. $out1 .' 2> '. $log1, $trash, $return);
 
         $output = file_exists ($log1) && is_readable ($log1) ? @file ($log1) : [];
 
@@ -369,12 +204,12 @@ class DockerSwarm extends Orchestrator
         unset ($return);
         unset ($output);
 
-        echo 'COMMAND > env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config'."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config'."\n";
 
         $out2 = tempnam ('.embrapa', '_');
         $log2 = tempnam ('.embrapa', '_');
 
-        exec ('env $(cat .env && cat .env.ci) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config > '. $out2 .' 2> '. $log2, $trash, $return);
+        exec ('env $(cat .env && cat .env.ci) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config > '. $out2 .' 2> '. $log2, $trash, $return);
 
         $output = file_exists ($log2) && is_readable ($log2) ? @file ($log2) : [];
 
@@ -618,9 +453,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > All published PORTs are valid! \n";
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config --services'."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' config --services'."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config --services 2>&1', $services, $return);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' config --services 2>&1', $services, $return);
 
         $cli = self::CLI_SERVICES;
 
@@ -645,8 +480,6 @@ class DockerSwarm extends Orchestrator
 
     static public function stop ($path)
     {
-        $manager = self::getUpManagerNode ($cluster);
-
         chdir ($path);
 
         // $name = basename ($path);
@@ -655,7 +488,7 @@ class DockerSwarm extends Orchestrator
 
         echo 'COMMAND > '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
 
-        exec (''. self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
+        exec (self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
 
         if ($return !== 0)
             throw new Exception ("Impossible to check deployed stacks");
@@ -679,8 +512,6 @@ class DockerSwarm extends Orchestrator
 
     static public function restart ($path)
     {
-        $manager = self::getUpManagerNode ($cluster);
-
         chdir ($path);
 
         // $name = basename ($path);
@@ -689,7 +520,7 @@ class DockerSwarm extends Orchestrator
 
         echo 'COMMAND > '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
 
-        exec (''. self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
+        exec (self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
 
         if ($return !== 0)
             throw new Exception ("Impossible to check deployed stacks");
@@ -717,7 +548,7 @@ class DockerSwarm extends Orchestrator
 
         echo 'COMMAND > '. self::DOCKER .' network create -d overlay '. $name ."\n";
 
-        exec (''. self::DOCKER .' network create -d overlay '. $name .' 2>&1', $output, $return);
+        exec (self::DOCKER .' network create -d overlay '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
             echo implode ("\n", $output) ."\n";
@@ -741,24 +572,20 @@ class DockerSwarm extends Orchestrator
 
     static public function backup ($path)
     {
-        $manager = self::getUpManagerNode ($cluster);
-
-        self::buildAndRunCliService ('backup', $manager, $path);
+        self::buildAndRunCliService ('backup', $path);
     }
 
     static public function sanitize ($path)
     {
-        $manager = self::getUpManagerNode ($cluster);
-
-        self::buildAndRunCliService ('sanitize', $manager, $path);
+        self::buildAndRunCliService ('sanitize', $path);
     }
 
-    static private function buildAndRunCliService ($service, $host, $path)
+    static private function buildAndRunCliService ($service, $path)
     {
         if (!in_array ($service, self::CLI_SERVICES))
             throw new Exception ("'". $service ."' is not a CLI service");
 
-        $valid = self::checkDockerSwarmFile ($path, $host, FALSE);
+        $valid = self::checkDockerSwarmFile ($path, FALSE);
 
         if (!$valid)
             throw new Exception ('Invalid build (docker-compose.yaml) or deploy (.embrapa/swarm/deployment.yaml) files! Please, check configuration (volumes, ports, enviroment variables, etc)');
@@ -772,9 +599,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Checking if stack ". $prefix ." is deployed...\n";
 
-        echo 'COMMAND > DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
+        echo 'COMMAND > '. self::DOCKER .' stack list --format "{{.Name}}"'."\n";
 
-        exec ('DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
+        exec (self::DOCKER .' stack list --format "{{.Name}}" 2>&1', $stacks, $return);
 
         if ($return !== 0)
             throw new Exception ("Impossible to check deployed stacks");
@@ -784,9 +611,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Trying to get configured CLI services... \n";
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config --services'."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' config --services'."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' config --services 2>&1', $services, $return);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' config --services 2>&1', $services, $return);
 
         if ($return !== 0)
             throw new Exception ("Impossible to get services in 'docker-compose.yaml'");
@@ -797,9 +624,9 @@ class DockerSwarm extends Orchestrator
         $out = tempnam ('.embrapa', '_');
         $log = tempnam ('.embrapa', '_');
 
-        echo 'COMMAND > env $(cat .env && cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/cli/'. $service .'.yaml config > '. $out .' 2> '. $log ."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.cli) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/cli/'. $service .'.yaml config > '. $out .' 2> '. $log ."\n";
 
-        exec ('env $(cat .env && cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/cli/'. $service .'.yaml config > '. $out .' 2> '. $log, $trash, $return);
+        exec ('env $(cat .env && cat .env.cli) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/cli/'. $service .'.yaml config > '. $out .' 2> '. $log, $trash, $return);
 
         if (!file_exists ($out) || !is_readable ($out))
             throw new Exception ("Impossible to load interpolates '.embrapa/swarm/cli/'. $service .'.yaml'");
@@ -868,9 +695,9 @@ class DockerSwarm extends Orchestrator
                         throw new Exception ("Volume named '". $volume ['source'] ."' used by service '". $name ."' is not declared as external in '.embrapa/swarm/cli/'. $service .'.yaml'");
         }
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' build --force-rm --no-cache '. $service ."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache '. $service ."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' build --force-rm --no-cache '. $service .' 2>&1', $output, $return);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache '. $service .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -879,9 +706,9 @@ class DockerSwarm extends Orchestrator
             throw new Exception ("Service '". $service ."' failed to BUILD");
         }
 
-        echo 'COMMAND > env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' push '. $service ."\n";
+        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' push '. $service ."\n";
 
-        exec ('env $(cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER_COMPOSE .' push '. $service .' 2>&1', $output, $return);
+        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' push '. $service .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -892,16 +719,16 @@ class DockerSwarm extends Orchestrator
 
         $name = $prefix .'_'. $service;
 
-        echo 'COMMAND > DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER .' stack rm '. $name ."\n";
+        echo 'COMMAND > '. self::DOCKER .' stack rm '. $name ."\n";
 
-        exec ('DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER .' stack rm '. $name .' 2>&1', $output1, $return1);
+        exec (self::DOCKER .' stack rm '. $name .' 2>&1', $output1, $return1);
 
         if ($return1 !== 0)
             echo implode ("\n", $output1) ."\n";
 
-        echo 'COMMAND > env $(cat .env && cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER .' stack deploy -c .embrapa/swarm/cli/'. $service .'.yaml --prune '. $name ."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.cli) '. self::DOCKER .' stack deploy -c .embrapa/swarm/cli/'. $service .'.yaml --prune '. $name ."\n";
 
-        exec ('env $(cat .env && cat .env.cli) DOCKER_HOST="ssh://root@'. $host .'" '. self::DOCKER .' stack deploy -c .embrapa/swarm/cli/'. $service .'.yaml --prune '. $name .' 2>&1', $output2, $return2);
+        exec ('env $(cat .env && cat .env.cli) '. self::DOCKER .' stack deploy -c .embrapa/swarm/cli/'. $service .'.yaml --prune '. $name .' 2>&1', $output2, $return2);
 
         if ($return2 !== 0)
         {
@@ -911,5 +738,13 @@ class DockerSwarm extends Orchestrator
         }
 
         echo "SUCCESS > Service '". $service ."' deployed successfully! \n";
+    }
+
+    static public function reference ()
+    {
+        $buffer  = "https://docs.docker.com/engine/reference/commandline/stack/ \n\n";
+        $buffer .= "Attention! To execute the commands, you need inject environment variables of '.env.ci' file. \n";
+
+        return $buffer;
     }
 }

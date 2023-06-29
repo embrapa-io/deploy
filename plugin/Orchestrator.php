@@ -30,6 +30,7 @@ abstract class Orchestrator
     abstract public static function restart ($path);
     abstract public static function backup ($path);
     abstract public static function sanitize ($path);
+    abstract public static function reference ();
 
     public static function checkSSHConnection ($host, $timeout = 30)
     {

@@ -93,6 +93,21 @@ class Controller
         require self::PATH .'restart.php';
     }
 
+    static public function backup ()
+    {
+        require self::PATH .'backup.php';
+    }
+
+    static public function sanitize ()
+    {
+        require self::PATH .'sanitize.php';
+    }
+
+    static public function more ()
+    {
+        require self::PATH .'more.php';
+    }
+
     static protected function score ($stage, $version)
     {
         if (!preg_match (self::VERSION_REGEX [$stage], $version, $matches)) return 0;

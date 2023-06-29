@@ -28,9 +28,10 @@ $_operations = [
 	'validate' 	=> [ 'Validate builds (i.e., project app stages like alpha, beta or release)', 'Controller::validate' ],
 	'deploy' 	=> [ 'Re-validate, prepare (i.e., create network) and deploy builds', 'Controller::deploy' ],
 	'stop' 		=> [ 'Stop running containers', 'Controller::stop' ],
-	'restart' 	=> [ 'Restart running containers', 'Controller::restart' ],
-	'backup' 	=> [ 'Generate builds backup', 'Controller::backup' ],
-	'sanitize'	=> [ 'Run periodically sanitize proccess', 'Controller::sanitize' ]
+	'restart' 	=> [ 'Start stopped or restart running containers', 'Controller::restart' ],
+	'backup' 	=> [ 'Generate backup of builds', 'Controller::backup' ],
+	'sanitize'	=> [ 'Run periodically sanitize proccess', 'Controller::sanitize' ],
+	'more'		=> [ 'How to execute other util commands', 'Controller::more' ]
 ];
 
 try
