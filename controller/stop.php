@@ -13,7 +13,7 @@ foreach ($_builds as $_build => $_b)
 {
 	echo "\n";
 
-	echo "### ". $_build ." ### \n\n";
+	echo "=== ". $_build ." === \n\n";
 
 	echo "INFO > Checking if build '". $_build ."' has has been deployed... \n";
 

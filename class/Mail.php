@@ -17,7 +17,15 @@ class Mail
         // https://symfony.com/doc/current/mailer.html
         // https://code.tutsplus.com/tutorials/send-emails-in-php-using-the-swift-mailer--cms-31218
 
-        $transport = Transport::fromDsn ('smtp://'. getenv ('SMTP_HOST') .':'. getenv ('SMTP_PORT') .'?verify_peer=0');
+        if (trim (getenv ('SMTP_USER')) != '' && trim (getenv ('SMTP_PASS')) != '')
+            $dsn = 'smtp://'. getenv ('SMTP_USER') .':'. getenv ('SMTP_PASS') .'@'. getenv ('SMTP_HOST') .':'. getenv ('SMTP_PORT');
+        else
+            $dsn = 'smtp://'. getenv ('SMTP_HOST') .':'. getenv ('SMTP_PORT');
+
+        if (!in_array (strtolower (trim (getenv ('SMTP_SECURE'))), [ 'yes', '1', 'true' ]))
+            $dsn .= '?verify_peer=0';
+
+        $transport = Transport::fromDsn ($dsn);
 
         $this->mailer = new Mailer ($transport);
 

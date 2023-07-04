@@ -11,9 +11,11 @@ echo "INFO > Checking status of ". sizeof ($_builds) ." build(s) to BACKUP... \n
 
 foreach ($_builds as $_build => $_b)
 {
+	if ($_daemon && !$_b->auto->backup) continue;
+
 	echo "\n";
 
-	echo "### ". $_build ." ### \n\n";
+	echo "=== ". $_build ." === \n\n";
 
 	echo "INFO > Checking if build '". $_build ."' has has been deployed... \n";
 

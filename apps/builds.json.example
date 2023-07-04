@@ -16,6 +16,10 @@
       "id": 999,
       "token": "abcdef0123456789"
     },
-    "active": true
+    "auto": {
+      "deploy": true,
+      "backup": true,
+      "sanitize": "true"
+    }
   }
 ]

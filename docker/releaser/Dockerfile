@@ -20,7 +20,7 @@ RUN set -ex \
  && ssh-add ~/.ssh/id_rsa \
  && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config \
  && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
- && mkdir -p /etc/periodic/releaser \
+ && mkdir -p /etc/periodic/deploy \
  && rm -rf /var/cache/apk/*
 
 FROM base AS docker

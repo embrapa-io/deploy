@@ -50,7 +50,7 @@ catch (Exception $e)
 {
 	echo "\n";
 
-	echo "Usage: php run.php [OPERATION] [BUILDS] \n\n";
+	echo "Usage: php run.php [OPERATION] [BUILDS | --all] \n\n";
 
 	echo "Operations: \n";
 
@@ -61,9 +61,11 @@ catch (Exception $e)
 
 	echo "Builds: \n";
 
-	echo "Needs to be a list, comma sepparated, where each build is in format 'project/app@stage'. \n\n";
+	echo "Needs to be a list, comma sepparated, where each build is in format 'project/app@stage' or '--all' to every build configured in 'apps'. \n\n";
 
-	echo "Example: php run.php backup project-a/app1@beta,project-b/web@release,project-a/app2@alpha \n";
+	echo "Examples: \n";
+	echo "php run.php backup project-a/app1@beta,project-b/web@release,project-a/app2@alpha \n";
+	echo "php run.php restart --all \n";
 
 	exit;
 }
@@ -76,7 +78,6 @@ $vars = [
 	'GITLAB_TOKEN',
 	'SMTP_HOST',
 	'SMTP_PORT',
-	'SMTP_SECURE',
 	'LOG_MAIL'
 ];
 

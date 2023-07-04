@@ -1,6 +1,6 @@
 <?php
 
-global $_builds, $_path;
+global $_daemon, $_builds, $_path;
 
 $_data = $_path . DIRECTORY_SEPARATOR .'data';
 
@@ -11,9 +11,11 @@ echo "INFO > Checking status of ". sizeof ($_builds) ." build(s) to SANITIZE... 
 
 foreach ($_builds as $_build => $_b)
 {
+	if ($_daemon && !$_b->auto->sanitize) continue;
+
 	echo "\n";
 
-	echo "### ". $_build ." ### \n\n";
+	echo "=== ". $_build ." === \n\n";
 
 	echo "INFO > Checking if build '". $_build ."' has has been deployed... \n";
 

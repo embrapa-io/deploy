@@ -41,7 +41,22 @@ class GitClient
         rmdir ($path);
     }
 
-    public function cloneTag ($project, $app, $stage, $version, $env, $ci, $bk, $path)
+    static public function copy ($from, $to)
+    {
+        if (!file_exists ($from) || !is_dir ($from) || !file_exists ($to) || !is_dir ($to)) return;
+
+        $files = new RecursiveIteratorIterator (
+            new RecursiveDirectoryIterator ($from, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST);
+
+        foreach ($files as $f)
+            if ($f->isDir ())
+                mkdir ($to . DIRECTORY_SEPARATOR . $files->getSubPathname ());
+            else
+                copy ($f, $to . DIRECTORY_SEPARATOR . $files->getSubPathname ());
+    }
+
+    public function cloneTag ($project, $app, $stage, $version, $ci, $bk, $path)
     {
         $data = $path . DIRECTORY_SEPARATOR .'data';
 
@@ -75,8 +90,7 @@ class GitClient
         if ($return !== 0)
             echo "\n". implode ("\n", $output) ."\n";
 
-        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env', $env, LOCK_EX) ||
-            !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.ci', $ci, LOCK_EX) ||
+        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.ci', $ci, LOCK_EX) ||
             !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.cli', $bk, LOCK_EX))
         {
             self::delete ($clone);
@@ -87,7 +101,7 @@ class GitClient
         return $clone;
     }
 
-    public function cloneBranch ($project, $app, $stage, $env, $ci, $bk)
+    public function cloneBranch ($project, $app, $stage, $ci, $bk)
     {
         $tmp = DIRECTORY_SEPARATOR .'tmp'. DIRECTORY_SEPARATOR .'validate';
 
@@ -110,8 +124,7 @@ class GitClient
             throw new Exception ('Impossible to clone repository at branch "'. $stage .'"');
         }
 
-        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env', $env, LOCK_EX) ||
-            !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.ci', $ci, LOCK_EX) ||
+        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.ci', $ci, LOCK_EX) ||
             !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.cli', $bk, LOCK_EX))
         {
             self::delete ($clone);

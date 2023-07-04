@@ -17,7 +17,7 @@ foreach ($_builds as $_build => $_b)
 
 	echo "\n";
 
-	echo "### ". $_build ." ### \n\n";
+	echo "=== ". $_build ." === \n\n";
 
 	echo "INFO > Checking if build '". $_build ."' is correctly configured... \n";
 
@@ -132,7 +132,7 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		$clone = GitClient::singleton ()->cloneBranch ($_b->project, $_b->app, $_b->stage, $env, $ci, $bk);
+		$clone = GitClient::singleton ()->cloneBranch ($_b->project, $_b->app, $_b->stage, $ci, $bk);
 
 		echo "done! \n";
 	}
@@ -144,6 +144,8 @@ foreach ($_builds as $_build => $_b)
 
 		continue;
 	}
+
+	GitClient::singleton ()->copy ($_settings, $clone);
 
 	try
 	{

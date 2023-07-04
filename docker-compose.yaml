@@ -18,6 +18,8 @@ services:
       - SMTP_HOST
       - SMTP_PORT
       - SMTP_SECURE
+      - SMTP_USER
+      - SMTP_PASS
       - LOG_MAIL
       - LOCK_LIFETIME_MINUTES
       - AUTO_DEPLOY

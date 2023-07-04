@@ -13,11 +13,11 @@ echo "INFO > Checking status of all ". sizeof ($_builds) ." builds configured...
 
 foreach ($_builds as $_build => $_b)
 {
-	if (!$_b->active) continue;
+	if ($_daemon && !$_b->auto->deploy) continue;
 
 	echo "\n";
 
-	echo "### ". $_build ." ### \n\n";
+	echo "=== ". $_build ." === \n\n";
 
 	echo "INFO > Checking if build '". $_build ."' is correctly configured... \n";
 
@@ -297,7 +297,7 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		$clone = GitClient::singleton ()->cloneTag ($_b->project, $_b->app, $_b->stage, $_newer ['name'], $env, $ci, $bk, $_path);
+		$clone = GitClient::singleton ()->cloneTag ($_b->project, $_b->app, $_b->stage, $_newer ['name'], $ci, $bk, $_path);
 
 		echo "done! \n";
 	}
@@ -311,6 +311,8 @@ foreach ($_builds as $_build => $_b)
 
 		continue;
 	}
+
+	GitClient::singleton ()->copy ($_settings, $clone);
 
 	try
 	{
