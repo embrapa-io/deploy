@@ -5,9 +5,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/releaser/Dockerfile
-      args:
-        SCHEDULER_MINUTES: ${SCHEDULER_MINUTES}
-    restart: unless-stopped
+    restart: always
     privileged: true
     environment:
       - SERVER
@@ -22,9 +20,6 @@ services:
       - SMTP_PASS
       - LOG_MAIL
       - LOCK_LIFETIME_MINUTES
-      - AUTO_DEPLOY
-      - AUTO_BACKUP
-      - AUTO_SANITIZE
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - .:/app
@@ -46,6 +41,6 @@ services:
       - 1025
       - 8025
     ports:
-      - ${MAILHOG_PORT}:8025
+      - ${MAILHOG_PORT:-7025}:8025
     profiles:
       - development

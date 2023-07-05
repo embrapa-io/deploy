@@ -52,6 +52,6 @@ foreach ($_builds as $_build => $_b)
 
 echo "\n";
 
-echo "Once in the directory, you can apply commands related to the orchestrator ". self::singleton ()->orchestrator .": \n";
+echo "Once in directory, you can apply commands related to orchestrator ". self::singleton ()->orchestrator .": \n";
 
 echo (self::singleton ()->orchestrator)::reference ();

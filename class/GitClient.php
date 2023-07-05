@@ -6,8 +6,14 @@ class GitClient
 
     static private $single = FALSE;
 
+    private $ssh = 'ssh://git@git.embrapa.io';
+
     private final function __construct ()
 	{
+        $ssh = trim (getenv ('GITLAB_SSH'));
+
+        if ($ssh != '') $this->ssh = $ssh;
+
         exec (self::GIT .' config --global user.email "releaser@embrapa.io"');
         exec (self::GIT .' config --global user.name "Embrapa I/O Releaser"');
     }
@@ -71,7 +77,7 @@ class GitClient
 
         mkdir ($clone, 0777, TRUE);
 
-        exec (self::GIT .' clone --depth 1 --verbose --branch '. $version .' '. getenv ('GITLAB_SSH') .'/'. $project .'/'. $app .'.git '. $clone .' 2>&1', $output, $return);
+        exec (self::GIT .' clone --depth 1 --verbose --branch '. $version .' '. $this->ssh .'/'. $project .'/'. $app .'.git '. $clone .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -115,7 +121,7 @@ class GitClient
 
         mkdir ($clone);
 
-        exec (self::GIT .' clone --depth 1 --verbose --branch '. $stage .' '. getenv ('GITLAB_SSH') .'/'. $project .'/'. $app .'.git '. $clone .' 2>&1', $output, $return);
+        exec (self::GIT .' clone --depth 1 --verbose --branch '. $stage .' '. $this->ssh .'/'. $project .'/'. $app .'.git '. $clone .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {

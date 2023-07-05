@@ -20,7 +20,6 @@ RUN set -ex \
  && ssh-add ~/.ssh/id_rsa \
  && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config \
  && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
- && mkdir -p /etc/periodic/deploy \
  && rm -rf /var/cache/apk/*
 
 FROM base AS docker
@@ -46,13 +45,12 @@ WORKDIR /app
 
 COPY ./composer.* /app/
 
-COPY ./docker/releaser/periodic/deploy /etc/periodic/deploy/
+COPY ./docker/releaser/periodic/deploy /etc/periodic/15min/
 COPY ./docker/releaser/periodic/backup /etc/periodic/daily/
 COPY ./docker/releaser/periodic/sanitize /etc/periodic/monthly/
 
 RUN set -ex \
- && echo "*/$SCHEDULER_MINUTES	*	*	*	*	run-parts /etc/periodic/deploy" >> /var/spool/cron/crontabs/root \
- && chmod a+x /etc/periodic/deploy/* \
+ && chmod a+x /etc/periodic/15min/* \
  && chmod a+x /etc/periodic/daily/* \
  && chmod a+x /etc/periodic/monthly/* \
  && composer install --no-interaction -d /app

@@ -13,8 +13,6 @@ echo "INFO > Checking status of all ". sizeof ($_builds) ." builds configured...
 
 foreach ($_builds as $_build => $_b)
 {
-	if (!$_b->active) continue;
-
 	echo "\n";
 
 	echo "=== ". $_build ." === \n\n";

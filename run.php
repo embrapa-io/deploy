@@ -73,8 +73,6 @@ catch (Exception $e)
 $vars = [
 	'SERVER',
 	'ORCHESTRATOR',
-	'GITLAB_URL',
-	'GITLAB_SSH',
 	'GITLAB_TOKEN',
 	'SMTP_HOST',
 	'SMTP_PORT',
@@ -97,10 +95,12 @@ $_data = $_path . DIRECTORY_SEPARATOR .'data';
 if (!file_exists ($_data) || !is_dir ($_data))
 	die ("CRITICAL > Volume for data storage is not mounted! \n");
 
+$lockLifetime = intval (getenv ('LOCK_LIFETIME_MINUTES'));
+
 $lifetimes = [
-	'deploy' => intval (getenv ('LOCK_LIFETIME_MINUTES')),
-	'backup' => 7 * 24 * 60,
-	'sanitize' => 15 * 24 * 60
+	'deploy' => $lockLifetime ? $lockLifetime : 4 * 60, // 4 hours (default)
+	'backup' => 7 * 24 * 60, // 1 week
+	'sanitize' => 15 * 24 * 60 // 15 days
 ];
 
 $_lock = $_data . DIRECTORY_SEPARATOR .'.'. $_operation;

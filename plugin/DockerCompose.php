@@ -411,7 +411,7 @@ class DockerCompose extends Orchestrator
     static public function reference ()
     {
         $buffer  = "https://docs.docker.com/compose/reference/ \n\n";
-        $buffer .= "Attention! To execute the commands, you need inject environment variables of '.env.ci' file. \n";
+        $buffer .= "Attention! To execute commands, you need inject environment variables of '.env.ci' file. \n";
         $buffer .= "See examples bellow: \n\n";
         $buffer .= "Removing stopped service containers: \n";
         $buffer .= "env \$(cat .env.ci) docker-compose rm \n\n";

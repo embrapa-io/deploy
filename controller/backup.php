@@ -1,6 +1,6 @@
 <?php
 
-global $_builds, $_path;
+global $_daemon, $_builds, $_path;
 
 $_data = $_path . DIRECTORY_SEPARATOR .'data';
 

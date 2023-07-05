@@ -1,7 +1,5 @@
 #!/bin/sh
 
-if [ -z "${AUTO_BACKUP}" ] || [ "${AUTO_BACKUP}" -ne 1 ]; then
-  exit 0
-fi
+echo "$(date) - $(realpath $0)" >> /var/log/daemon.log
 
 /usr/local/bin/php /app/run.php backup:daemon --all >> /dev/null 2>&1

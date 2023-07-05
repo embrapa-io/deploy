@@ -8,7 +8,10 @@ class GitLab
 
     private final function __construct ()
 	{
-        $url = getenv ('GITLAB_URL');
+        $url = trim (getenv ('GITLAB_URL'));
+
+        if ($url == '') $url = 'https://git.embrapa.io';
+
         $token = getenv ('GITLAB_TOKEN');
 
         $this->client = new Gitlab\Client ();

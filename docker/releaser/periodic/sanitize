@@ -1,7 +1,5 @@
 #!/bin/sh
 
-if [ -z "${AUTO_SANITIZE}" ] || [ "${AUTO_SANITIZE}" -ne 1 ]; then
-  exit 0
-fi
+echo "$(date) - $(realpath $0)" >> /var/log/daemon.log
 
 /usr/local/bin/php /app/run.php sanitize:daemon --all >> /dev/null 2>&1
