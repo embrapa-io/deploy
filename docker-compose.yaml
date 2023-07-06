@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/releaser/Dockerfile
+    image: embrapa-io/releaser
     restart: always
     privileged: true
     environment:
@@ -22,8 +23,6 @@ services:
       - LOCK_LIFETIME_MINUTES
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
-      - .:/app
-      - /app/vendor
     healthcheck:
       test: php -l /app/run.php || exit 1
       interval: 10s

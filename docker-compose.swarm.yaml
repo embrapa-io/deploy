@@ -1,0 +1,11 @@
+version: '3.9'
+
+services:
+  releaser:
+    image: embrapa-io/releaser
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    deploy:
+      mode: host
+      restart_policy:
+        condition: always
