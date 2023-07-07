@@ -9,16 +9,12 @@ RUN set -ex \
     curl \
     g++ \
     git \
+    jq \
     libtool \
     make \
     openssh-client \
     tini \
  && eval $(ssh-agent -s) \
- && mkdir -p ~/.ssh \
- && cp /app/ssh ~/.ssh/id_rsa \
- && chmod 600 ~/.ssh/id_rsa \
- && ssh-add ~/.ssh/id_rsa \
- && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config \
  && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
  && rm -rf /var/cache/apk/*
 
@@ -42,13 +38,16 @@ FROM docker AS releaser
 WORKDIR /app
 
 RUN set -ex \
- && cp /app/docker/releaser/periodic/deploy /etc/periodic/15min \
- && cp /app/docker/releaser/periodic/backup /etc/periodic/daily/ \
- && cp /app/docker/releaser/periodic/sanitize /etc/periodic/monthly/ \
+ && cp /app/job/deploy /etc/periodic/15min \
+ && cp /app/job/backup /etc/periodic/daily/ \
+ && cp /app/job/sanitize /etc/periodic/monthly/ \
  && chmod a+x /etc/periodic/15min/* \
  && chmod a+x /etc/periodic/daily/* \
  && chmod a+x /etc/periodic/monthly/* \
+ && chmod a+x /app/bin/* \
  && composer install --no-interaction -d /app
+
+ENV PATH /app/bin:$PATH
 
 ENTRYPOINT ["/sbin/tini", "--"]
 

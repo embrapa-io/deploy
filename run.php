@@ -188,7 +188,7 @@ catch (Exception $e)
 {
 	echo "\n";
 
-	echo "CRITICAL > ". $e->getMessage () ."\n\n";
+	echo "CRITICAL > ". $e->getMessage () ." \n\n";
 }
 
 try

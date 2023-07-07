@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+
+echo "Embrapa I/O - Releaser"
+echo "Command line utility to assist in deploying and updating apps on clusters external to Embrapa I/O platform."
+
+if [ ! -d "/data" ]; then
+  echo "Critical error! You need to mount volume data! Correct command to use this image is:"
+  echo "docker run --name releaser -v $$(pwd):/data -d releaser"
+
+  exit 1
+fi
+
+if [ ! -f "/data/.env" ]; then
+  while
+    echo ""
+
+    echo "Warning! Environment variables file (.env) not found!"
+    echo "Please, enter with required info..."
+
+    echo ""
+
+    read -p "Server name (e.g., foo.example.com): " server
+
+    echo ""
+
+    while
+      PS3="Container orchestrator: "
+
+      select orchestrator in DockerCompose DockerSwarm
+      do
+        break
+      done
+      [[ -z $orchestrator || $orchestrator != @(DockerCompose|DockerSwarm) ]]
+    do true; done
+
+    echo ""
+
+    echo "Go to https://git.embrapa.io and, in your profile, generate a new Access Token with 'read_api' scope."
+    read -p "GitLab token: " token
+
+    echo ""
+
+    read -p "SMTP host (e.g., smtp.gmail.com): " smtp_host
+
+    while
+      read -p "SMTP port (e.g., 25): " smtp_port
+      [[ -z $smtp_port || $smtp_port == *[^0-9]* ]]
+    do true; done
+
+    read -p "SMTP secure (y/n): " smtp_secure
+    read -p "SMTP user (e.g., you@gmail.com): " smtp_user
+    read -p "SMTP password: " smtp_password
+
+    if [ "$smtp_secure" != "${smtp_secure#[Yy]}" ]; then
+      smtp_secure="yes"
+    else
+      smtp_secure="no"
+    fi
+
+    echo ""
+
+    read -p "e-Mail to log: " email
+
+    echo ""
+
+    echo "Please check the value of each configuration variable and confirm:"
+
+    echo ""
+
+    out="SERVER=${server//[[:space:]]/}"$'\n'
+    out+="ORCHESTRATOR=$orchestrator"$'\n'
+    out+="GITLAB_TOKEN=${token//[[:space:]]/}"$'\n'
+    out+="SMTP_HOST=${smtp_host//[[:space:]]/}"$'\n'
+    out+="SMTP_PORT=${smtp_port//[^0-9]/}"$'\n'
+    out+="SMTP_SECURE=$smtp_secure"$'\n'
+    out+="SMTP_USER=${smtp_user//[[:space:]]/}"$'\n'
+    out+="SMTP_PASS=${smtp_pass//[[:space:]]/}"$'\n'
+    out+="LOG_MAIL=${email//[[:space:]]/}"
+
+    echo "$out"
+
+    echo ""
+
+    read -p "Is correct? (yes or no): " confirm
+
+    [[ -z $confirm || $confirm != "yes" ]]
+  do true; done
+
+  echo "$out" > /data/.env
+fi
+
+export $(cat /data/.env)
+
+if [ ! -f "/data/ssh" ]; then
+  echo ""
+
+  echo "Warning! Looks like the SSH Key to GitLab access is missing."
+
+  while
+    read -p "You want to generate and configure a new key pair? (yes/no): " new_ssh_key
+    [[ -z $new_ssh_key || $new_ssh_key != @(yes|no) ]]
+  do true; done
+
+  if [ $new_ssh_key == "no" ]; then
+    fake="Fake key! It was generated just to prevent the script"$'\n'
+    fake+="from detecting the lack of a key and asking the user about"$'\n'
+    fake+="its generation."$'\n'
+    fake+="Delete this file to generate a new valid SSH key pair."
+
+    echo "$fake" > /data/ssh
+  else
+    echo ""
+
+    echo "Generating new SSH key pair..."
+
+    ssh-keygen -o -t rsa -b 4096 -N '' -C '' -f /data/ssh
+
+    echo ""
+
+    echo "Configuring SSH key pair..."
+
+    mkdir -p ~/.ssh
+    cp /data/ssh ~/.ssh/id_rsa
+    chmod 600 ~/.ssh/id_rsa
+    ssh-add ~/.ssh/id_rsa
+    echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+    echo ""
+
+    echo "Done! Please, access GitLab (https://git.embrapa.io) and, in your profile, add a new SSH with follow content:"
+
+    echo ""
+
+    cat /data/ssh.pub
+  fi
+fi
+
+if [ ! -f "/data/builds.json" ]; then
+  echo ""
+
+  echo "Warning! The builds are not configured yet (file 'builds.json' is missing)."
+
+  echo ""
+
+  echo "Please enter builds comma separated, e.g.:"
+  echo "project-a/app1@beta,project-b/web@release,project-a/app2@alpha"
+
+  echo ""
+
+  while
+    read -p "Builds: " builds
+    [[ -z $builds || $builds != @(yes|no) ]]
+  do true; done
+fi
+
+# /usr/local/bin/php /app/run.php $1 $2
