@@ -4,7 +4,9 @@ echo "Embrapa I/O - Releaser"
 echo "Command line utility to assist in deploying and updating apps on clusters external to Embrapa I/O platform."
 
 if [ ! -d "/data" ]; then
-  echo "Critical error! You need to mount volume data! Correct command to use this image is:"
+  echo ""
+
+  echo "Critical! You need to mount volume data! Correct command to use this image is:"
   echo "docker run --name releaser -v $$(pwd):/data -d releaser"
 
   exit 1
@@ -81,58 +83,62 @@ if [ ! -f "/data/.env" ]; then
 
     echo ""
 
-    read -p "Is correct? (yes or no): " confirm
+    read -p "Is correct? (y/n): " confirm
 
-    [[ -z $confirm || $confirm != "yes" ]]
+    [[ -z $confirm || "$confirm" == "${confirm#[Yy]}" ]]
   do true; done
 
   echo "$out" > /data/.env
+
+  echo ""
+
+  echo "Note: A '.env' file has been created in volume directory shared with the container. To change values in the future, edit this file."
 fi
 
 export $(cat /data/.env)
 
-if [ ! -f "/data/ssh" ]; then
+if [ ! -f "/root/.ssh/id_rsa" ]; then
   echo ""
 
   echo "Warning! Looks like the SSH Key to GitLab access is missing."
 
-  while
-    read -p "You want to generate and configure a new key pair? (yes/no): " new_ssh_key
-    [[ -z $new_ssh_key || $new_ssh_key != @(yes|no) ]]
-  do true; done
+  echo ""
 
-  if [ $new_ssh_key == "no" ]; then
-    fake="Fake key! It was generated just to prevent the script"$'\n'
-    fake+="from detecting the lack of a key and asking the user about"$'\n'
-    fake+="its generation."$'\n'
-    fake+="Delete this file to generate a new valid SSH key pair."
-
-    echo "$fake" > /data/ssh
-  else
-    echo ""
-
+  if [ ! -f "/data/ssh" ]; then
     echo "Generating new SSH key pair..."
 
     ssh-keygen -o -t rsa -b 4096 -N '' -C '' -f /data/ssh
-
-    echo ""
-
-    echo "Configuring SSH key pair..."
-
-    mkdir -p ~/.ssh
-    cp /data/ssh ~/.ssh/id_rsa
-    chmod 600 ~/.ssh/id_rsa
-    ssh-add ~/.ssh/id_rsa
-    echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
-
-    echo ""
-
-    echo "Done! Please, access GitLab (https://git.embrapa.io) and, in your profile, add a new SSH with follow content:"
-
-    echo ""
-
-    cat /data/ssh.pub
+  else
+    echo "An SSH private key already exists in the volume directory shared with the container. This key will be restored."
   fi
+
+  if [ ! -f "/data/ssh.pub" ]; then
+    echo "Generating a new SSH public key from private key..."
+
+    ssh-keygen -y -f /data/ssh > /data/ssh.pub
+  fi
+
+  echo ""
+
+  echo "Configuring SSH private key in container environment..."
+
+  mkdir -p /root/.ssh
+  cp /data/ssh /root/.ssh/id_rsa
+  chmod 600 /root/.ssh/id_rsa
+  ssh-add /root/.ssh/id_rsa
+  echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+  echo ""
+
+  echo "Done! Please, access GitLab (https://git.embrapa.io) and, in your profile, add a new SSH with follow content:"
+
+  echo ""
+
+  cat /data/ssh.pub
+
+  echo ""
+
+  echo "Note: SSH key pair is available on the volume directory shared with the container."
 fi
 
 if [ ! -f "/data/builds.json" ]; then
@@ -142,15 +148,81 @@ if [ ! -f "/data/builds.json" ]; then
 
   echo ""
 
-  echo "Please enter builds comma separated, e.g.:"
+  echo "Please enter some builds comma separated, e.g.:"
   echo "project-a/app1@beta,project-b/web@release,project-a/app2@alpha"
 
   echo ""
 
   while
-    read -p "Builds: " builds
-    [[ -z $builds || $builds != @(yes|no) ]]
+    read -p "Builds: " input
+    [[ -z $input || $input =~ [^a-z0-9,-/@\ ] ]]
   do true; done
+
+  builds=$(echo $input | tr "," "\n")
+
+  count=0
+  unset array
+
+  sentry=$(jq -n \
+    --arg dsn "" \
+    '$ARGS.named')
+
+  matomo=$(jq -n \
+    --argjson id 0 \
+    --arg token "" \
+    '$ARGS.named')
+
+  auto=$(jq -n \
+    --argjson deploy true \
+    --argjson backup true \
+    --argjson sanitize true \
+    '$ARGS.named')
+
+  for build in $builds
+  do
+    echo "try [$build]"
+
+    if [[ ! $build =~ [[:space:]]*([a-z0-9][a-z0-9-]+[a-z0-9])\/([a-z0-9][a-z0-9-]+[a-z0-9])@((alpha)|(beta)|(release))[[:space:]]* ]]; then
+      echo "The build format for '$build' is incorrect! It will be ignored."
+
+      continue
+    fi
+
+    array[$count]=$(jq -n \
+      --arg project ${BASH_REMATCH[1]} \
+      --arg app ${BASH_REMATCH[2]} \
+      --arg stage ${BASH_REMATCH[3]} \
+      --argjson team "[]" \
+      --argjson sentry "$sentry" \
+      --argjson matomo "$matomo" \
+      --argjson auto "$auto" \
+      '$ARGS.named')
+
+    folder="${BASH_REMATCH[1]}_${BASH_REMATCH[2]}_${BASH_REMATCH[3]}"
+
+    mkdir -p /data/settings/$folder
+
+    echo "" > /data/settings/$folder/.env
+
+    ((count++))
+  done
+
+  if (( ${#array[@]} == 0 )); then
+    echo "Warning! No build could be configured. Try again or manually create the 'builds.json' file in the volume directory shared with the container."
+
+    exit 1
+  fi
+
+  concat=$(IFS=","; echo "${array[*]}")
+
+  final=$(echo "[$concat]" | jq -s '.[]')
+
+  echo "$final" > /data/builds.json
+
+  echo "Done! 'builds.json' file has been created in volume directory shared with the container."
+  echo "Now, you need to complete this file with your team members e-mail, Sentry DSN and Matomo ID/Token, for each build."
+  echo "Furthermore, you need to configure '.env' file for build in 'settings' folder, inside volume directory."
+  echo "For detailed info, access: https://www.embrapa.io/docs/boilerplate/"
 fi
 
-# /usr/local/bin/php /app/run.php $1 $2
+/usr/local/bin/php /app/run.php $1 $2
