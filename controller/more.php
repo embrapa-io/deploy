@@ -1,13 +1,6 @@
 <?php
 
-global $_builds, $_path;
-
 self::singleton ();
-
-$_data = $_path . DIRECTORY_SEPARATOR .'data';
-
-if (!file_exists ($_data) || !is_dir ($_data))
-	throw new Exception ('Volume for data storage is not mounted!');
 
 foreach ($_builds as $_build => $_b)
 {

@@ -1,7 +1,5 @@
 FROM php:cli-alpine AS base
 
-COPY . /app/
-
 RUN set -ex \
  && apk add --update --no-cache \
     autoconf \
@@ -34,6 +32,8 @@ RUN set -ex \
  && rm -rf /var/cache/apk/*
 
 FROM docker AS releaser
+
+COPY . /app/
 
 WORKDIR /app
 

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 
-echo "Embrapa I/O - Releaser"
-echo "Command line utility to assist in deploying and updating apps on clusters external to Embrapa I/O platform."
+echo ""
+
+echo "A command line utility to assist in deploying and updating Embrapa I/O apps."
+echo "For detailed info, access: https://embrapa.io/docs/releaser/"
 
 if [ ! -d "/data" ]; then
   echo ""
@@ -208,7 +210,7 @@ if [ ! -f "/data/builds.json" ]; then
   done
 
   if (( ${#array[@]} == 0 )); then
-    echo "Warning! No build could be configured. Try again or manually create the 'builds.json' file in the volume directory shared with the container."
+    echo "Warning! No one build could be configured. Try again or manually create the 'builds.json' file in the volume directory shared with the container."
 
     exit 1
   fi
@@ -220,9 +222,12 @@ if [ ! -f "/data/builds.json" ]; then
   echo "$final" > /data/builds.json
 
   echo "Done! 'builds.json' file has been created in volume directory shared with the container."
-  echo "Now, you need to complete this file with your team members e-mail, Sentry DSN and Matomo ID/Token, for each build."
-  echo "Furthermore, you need to configure '.env' file for build in 'settings' folder, inside volume directory."
-  echo "For detailed info, access: https://www.embrapa.io/docs/boilerplate/"
+  echo "Now, you need to complete this file with e-mails of your team members, Sentry DSN and Matomo ID/Token, for each build."
+  echo "Furthermore, you need to configure '.env' file for each build in 'settings' folder, inside volume directory."
 fi
 
-/usr/local/bin/php /app/run.php $1 $2
+echo ""
+
+/usr/local/bin/php /app/run.php "${@:1}"
+
+echo $'\n'

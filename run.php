@@ -24,19 +24,70 @@ if (!`which git`)
 if (!(int) ini_get ('register_argc_argv'))
 	die ("CRITICAL > This is a command-line script! You must enable 'register_argc_argv' directive. \n");
 
+require_once 'class/Operation.php';
+
 $_operations = [
-	'validate' 	=> [ 'Validate builds (i.e., project app stages like alpha, beta or release)', 'Controller::validate' ],
-	'deploy' 	=> [ 'Re-validate, prepare (i.e., create network) and deploy builds', 'Controller::deploy' ],
-	'stop' 		=> [ 'Stop running containers', 'Controller::stop' ],
-	'restart' 	=> [ 'Start stopped or restart running containers', 'Controller::restart' ],
-	'backup' 	=> [ 'Generate backup of builds', 'Controller::backup' ],
-	'sanitize'	=> [ 'Run periodically sanitize proccess', 'Controller::sanitize' ],
-	'more'		=> [ 'How to execute other util commands', 'Controller::more' ]
+	'validate' => new Operation (
+		'Validate builds (i.e., project app stages like alpha, beta or release)',
+		'Controller::validate',
+		1,
+		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
+		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+	),
+	'deploy' => new Operation (
+		'Re-validate, prepare (i.e., create network) and deploy builds',
+		'Controller::deploy',
+		1,
+		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
+		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+	),
+	'stop' => new Operation (
+		'Stop running containers',
+		'Controller::stop',
+		1,
+		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
+		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+	),
+	'restart' => new Operation (
+		'Start stopped or restart running containers',
+		'Controller::restart',
+		1,
+		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
+		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+	),
+	'rollback' => new Operation (
+		'Rollback build to previous version',
+		'Controller::rollback',
+		1,
+		'[BUILD] [VERSION]',
+		'my-project/backend@beta 3.'. date ('y.n') .'-beta.17'
+	),
+	'backup' => new Operation (
+		'Generate backup of builds',
+		'Controller::backup',
+		1,
+		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
+		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+	),
+	'sanitize' => new Operation (
+		'Run periodically sanitize proccess',
+		'Controller::sanitize',
+		1,
+		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
+		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+	),
+	'more' => new Operation (
+		'How to execute other util commands',
+		'Controller::more',
+		0,
+		'',
+		''
+	)
 ];
 
 try
 {
-	if ($argc != 3) throw new Exception ();
+	if ($argc < 2) throw new Exception ();
 
 	$aux = explode (':', $argv [1]);
 
@@ -50,22 +101,29 @@ catch (Exception $e)
 {
 	echo "\n";
 
-	echo "Usage: php run.php [OPERATION] [BUILDS | --all] \n\n";
+	echo "Usage: docker exec -it releaser io COMMAND \n\n";
 
-	echo "Operations: \n";
+	echo "Commands: \n";
 
-	foreach ($_operations as $op => $array)
-		echo "  ". str_pad ($op, 12) . $array [0] ."\n";
+	foreach ($_operations as $op => $obj)
+		echo "  ". str_pad ($op, 12) . $obj->info ."\n";
 
 	echo "\n";
 
-	echo "Builds: \n";
+	echo "See 'docker exec -it releaser io COMMAND --help' for more information on a command. \n\n";
 
-	echo "Needs to be a list, comma sepparated, where each build is in format 'project/app@stage' or '--all' to every build configured in 'apps'. \n\n";
+	exit;
+}
 
-	echo "Examples: \n";
-	echo "php run.php backup project-a/app1@beta,project-b/web@release,project-a/app2@alpha \n";
-	echo "php run.php restart --all \n";
+if ($argc != 2 + $_operations [$_operation]->params || ($argc > 2 && trim ($argv [2]) == '--help'))
+{
+	echo "\n";
+
+	echo "Usage: docker exec -it releaser io ". $_operation ." ". $_operations [$_operation]->usage ." \n\n";
+
+	echo "Example: \n";
+
+	echo "docker exec -it releaser io ". $_operation ." ". $_operations [$_operation]->example ." \n\n";
 
 	exit;
 }
@@ -90,7 +148,7 @@ if (sizeof ($unsetted))
 
 $_path = dirname (__FILE__);
 
-$_data = $_path . DIRECTORY_SEPARATOR .'data';
+$_data = DIRECTORY_SEPARATOR .'data';
 
 if (!file_exists ($_data) || !is_dir ($_data))
 	die ("CRITICAL > Volume for data storage is not mounted! \n");
@@ -103,12 +161,17 @@ $lifetimes = [
 	'sanitize' => 15 * 24 * 60 // 15 days
 ];
 
-$_lock = $_data . DIRECTORY_SEPARATOR .'.'. $_operation;
+$_lock = $_data . DIRECTORY_SEPARATOR .'.lock'. DIRECTORY_SEPARATOR . $_operation;
 
-if ($_daemon && file_exists ($_lock) && (!is_writable ($_lock) || time () - filemtime ($_lock) < $lifetimes [$_operation] * 60))
-	die ("CRITICAL > The operation '". $_operation ."' is already being performed by a process started earlier! \n");
+@mkdir (dirname ($_lock), 0700, TRUE);
 
-@unlink ($_lock);
+if ($_daemon)
+{
+	if (file_exists ($_lock) && (!is_writable ($_lock) || time () - filemtime ($_lock) < $lifetimes [$_operation] * 60))
+		die ("CRITICAL > The operation '". $_operation ."' is already being performed by a process started earlier! \n");
+	else
+		@unlink ($_lock);
+}
 
 require_once 'vendor/autoload.php';
 
@@ -127,35 +190,6 @@ require_once 'plugin/DockerSwarm.php';
 if (!Orchestrator::exists (getenv ('ORCHESTRATOR')))
 	die ("CRITICAL > Orchestrator '". getenv ('ORCHESTRATOR') ."' defined in '.env' is not valid! \n");
 
-$builds = $_path . DIRECTORY_SEPARATOR .'apps'. DIRECTORY_SEPARATOR .'builds.json';
-
-if (!file_exists ($builds) || !is_readable ($builds))
-	die ("CRITICAL > Is needed configure builds of apps to deploy in file '". $builds ."'! \n");
-
-$_builds = [];
-
-$loaded = json_decode (file_get_contents ($builds));
-
-$slice = explode (',', $argv [2]);
-
-$all = sizeof ($slice) == 1 && trim ($slice [0]) == '--all' ? TRUE : FALSE;
-
-foreach ($loaded as $trash => $b)
-{
-	$build  = $b->project .'/'. $b->app .'@'. $b->stage;
-
-	if ($all || in_array ($build, $slice))
-	{
-		if (array_key_exists ($build, $_builds))
-			die ("CRITICAL > The build '". $build ."' was configured twice! \n");
-
-		$_builds [$build] = $b;
-	}
-}
-
-if (!sizeof ($_builds))
-	die ("CRITICAL > No builds to deploy! Check settings file (apps/builds.json). \n");
-
 set_error_handler ('handleError');
 
 try
@@ -164,15 +198,15 @@ try
 
 	$_benchmark = time ();
 
-	if ($_daemon) file_put_contents ($_lock, '');
+	if ($_daemon) file_put_contents ($_lock, date (DATE_RFC822));
 
 	echo "INFO > Starting execution... \n";
 
 	$_nothing = TRUE;
 
-	$function = $_operations [$_operation][1];
+	$function = $_operations [$_operation]->method;
 
-	call_user_func_array ($function, []);
+	call_user_func_array ($function, array_slice ($argv, 2));
 
 	try { @unlink ($_lock); } catch (Exception $e) {}
 

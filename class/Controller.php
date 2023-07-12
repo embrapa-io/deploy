@@ -73,8 +73,12 @@ class Controller
 		return self::$single;
 	}
 
-    static public function validate ()
+    static public function validate ($slice)
     {
+        global $_path, $_data;
+
+        $_builds = self::getBuilds ($_data, $slice);
+
         require self::PATH .'validate.php';
     }
 
@@ -105,6 +109,10 @@ class Controller
 
     static public function more ()
     {
+        global $_data;
+
+        $_builds = self::getBuilds ($_data, '--all');
+
         require self::PATH .'more.php';
     }
 
@@ -121,5 +129,39 @@ class Controller
         if ((int) $matches [4] > 9999) return 0;
 
         return (int) $matches [1] . $matches [2] . str_pad ($matches [3], 2, '0', STR_PAD_LEFT) . str_pad ($matches [4], 4, '0', STR_PAD_LEFT);
+    }
+
+    static protected function getBuilds ($data, $input)
+    {
+        $builds = $data . DIRECTORY_SEPARATOR .'builds.json';
+
+        if (!file_exists ($builds) || !is_readable ($builds))
+            throw new Exception ("Is needed configure builds of apps to deploy in file '". $builds ."'!");
+
+        $_builds = [];
+
+        $loaded = json_decode (file_get_contents ($builds));
+
+        $slice = explode (',', $input);
+
+        $all = sizeof ($slice) == 1 && trim ($slice [0]) == '--all' ? TRUE : FALSE;
+
+        foreach ($loaded as $trash => $b)
+        {
+            $build  = $b->project .'/'. $b->app .'@'. $b->stage;
+
+            if ($all || in_array ($build, $slice))
+            {
+                if (array_key_exists ($build, $_builds))
+                    throw new Exception ("The build '". $build ."' was configured twice!");
+
+                $_builds [$build] = $b;
+            }
+        }
+
+        if (!sizeof ($_builds))
+            throw new Exception ("No builds to deploy! Check settings file (apps/builds.json).");
+
+        return $_builds;
     }
 }

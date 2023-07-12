@@ -1,12 +1,5 @@
 <?php
 
-global $_builds, $_path;
-
-$_data = $_path . DIRECTORY_SEPARATOR .'data';
-
-if (!file_exists ($_data) || !is_dir ($_data))
-	throw new Exception ('Volume for data storage is not mounted!');
-
 $git = GitLab::singleton ();
 
 echo "INFO > Checking status of all ". sizeof ($_builds) ." builds configured... \n";
@@ -19,27 +12,30 @@ foreach ($_builds as $_build => $_b)
 
 	echo "INFO > Checking if build '". $_build ."' is correctly configured... \n";
 
-	$_settings = $_path . DIRECTORY_SEPARATOR .'apps'. DIRECTORY_SEPARATOR . implode ('_', [$_b->project, $_b->app, $_b->stage]);
+	$_settings = $_data . DIRECTORY_SEPARATOR .'settings'. DIRECTORY_SEPARATOR . implode ('_', [$_b->project, $_b->app, $_b->stage]);
 
 	if (!file_exists ($_settings) || !is_dir ($_settings) || !file_exists ($_settings . DIRECTORY_SEPARATOR .'.env'))
 	{
 		echo "ERROR > Settings folder or environment variables file (.env) does not exists at '". $_settings ."'! \n\n";
 
-		$_nothing = FALSE;
-
 		continue;
 	}
-
-	echo "INFO > Checking if build '". $_build ."' has new tags... \n";
 
 	if (!preg_match ('/^[a-z0-9][a-z0-9-]+[a-z0-9]$/', $_b->project) || !preg_match ('/^[a-z0-9][a-z0-9-]+[a-z0-9]$/', $_b->app) || !in_array ($_b->stage, [ 'alpha', 'beta', 'release' ]))
 	{
 		echo "ERROR > Invalid build name! \n\n";
 
-		$_nothing = FALSE;
-
 		continue;
 	}
+
+	if (!intval ($_b->matomo->id)) echo "WARNING > Configure a valid Matomo ID! \n";
+
+	// https://da5d463198b1440cbcb1280531b8ac48@bug.embrapa.io/78
+
+	if (!preg_match ('/^https:\/\/[a-f0-9]{32}@bug\.embrapa\.io\/[0-9]+$/', $_b->sentry->dsn))
+		echo "WARNING > Configure a valid Sentry DSN! \n";
+
+	echo "INFO > Checking if build '". $_build ."' has new tags... \n";
 
 	try
 	{
@@ -53,8 +49,6 @@ foreach ($_builds as $_build => $_b)
 	if (!sizeof ($project))
 	{
 		echo "ERROR > Project '". $_b->project ."' not found! \n\n";
-
-		$_nothing = FALSE;
 
 		continue;
 	}
@@ -73,8 +67,6 @@ foreach ($_builds as $_build => $_b)
 	if (!sizeof ($load))
 	{
 		echo "ERROR > Repository '". $_b->project .'/'. $_b->app ."' not found! \n\n";
-
-		$_nothing = FALSE;
 
 		continue;
 	}
