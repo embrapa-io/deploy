@@ -82,38 +82,69 @@ class Controller
         require self::PATH .'validate.php';
     }
 
-    static public function deploy ()
+    static public function deploy ($slice, $force = '')
     {
+        global $_daemon, $_nothing, $_path, $_data;
+
+        $_force = $force == '--force' ? TRUE : FALSE;
+
+        $_builds = self::getBuilds ($_data, $slice);
+
         require self::PATH .'deploy.php';
     }
 
-    static public function stop ()
+    static public function rollback ($build, $_version)
     {
+        global $_path, $_data;
+
+        $_builds = self::getBuilds ($_data, $build);
+
+        require self::PATH .'rollback.php';
+    }
+
+    static public function stop ($slice)
+    {
+        global $_data;
+
+        $_builds = self::getBuilds ($_data, $slice);
+
         require self::PATH .'stop.php';
     }
 
-    static public function restart ()
+    static public function restart ($slice)
     {
+        global $_data;
+
+        $_builds = self::getBuilds ($_data, $slice);
+
         require self::PATH .'restart.php';
     }
 
-    static public function backup ()
+    static public function backup ($slice)
     {
+        global $_daemon, $_data;
+
+        $_builds = self::getBuilds ($_data, $slice);
+
         require self::PATH .'backup.php';
     }
 
-    static public function sanitize ()
+    static public function sanitize ($slice)
     {
+        global $_daemon, $_data;
+
+        $_builds = self::getBuilds ($_data, $slice);
+
         require self::PATH .'sanitize.php';
     }
 
-    static public function more ()
+    static public function info ()
     {
         global $_data;
 
         $_builds = self::getBuilds ($_data, '--all');
 
-        require self::PATH .'more.php';
+        require self::PATH .'info.php';
     }
 
     static protected function score ($stage, $version)

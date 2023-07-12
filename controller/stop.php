@@ -1,11 +1,6 @@
 <?php
 
-global $_builds, $_path;
-
-$_data = $_path . DIRECTORY_SEPARATOR .'data';
-
-if (!file_exists ($_data) || !is_dir ($_data))
-	throw new Exception ('Volume for data storage is not mounted!');
+$_apps = $_data . DIRECTORY_SEPARATOR .'apps';
 
 echo "INFO > Checking status of ". sizeof ($_builds) ." build(s) to STOP... \n";
 
@@ -24,7 +19,7 @@ foreach ($_builds as $_build => $_b)
 		continue;
 	}
 
-	$version = $_data . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app]) . DIRECTORY_SEPARATOR .'VERSION'. DIRECTORY_SEPARATOR . $_b->stage;
+	$version = $_apps . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app]) . DIRECTORY_SEPARATOR .'.version'. DIRECTORY_SEPARATOR . $_b->stage;
 
 	try
 	{
@@ -42,7 +37,7 @@ foreach ($_builds as $_build => $_b)
 		continue;
 	}
 
-	$clone = $_data . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app, $_last]);
+	$clone = $_apps . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app, $_last]);
 
 	if (!file_exists ($clone) || !is_dir ($clone))
 	{

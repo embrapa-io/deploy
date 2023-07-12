@@ -1,5 +1,3 @@
 .env
 composer.phar
 /vendor/
-ssh
-ssh.pub

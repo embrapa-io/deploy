@@ -64,14 +64,11 @@ class GitClient
 
     public function cloneTag ($project, $app, $stage, $version, $ci, $bk, $path)
     {
-        $data = $path . DIRECTORY_SEPARATOR .'data';
+        if (!file_exists ($path) || !is_dir ($path)) mkdir ($path);
 
-        if (!file_exists ($data) || !is_dir ($data))
-            throw new Exception ('Volume for data storage is not mounted!');
+        chdir ($path);
 
-        chdir ($data);
-
-        $clone = $data . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$project, $app, $version]);
+        $clone = $path . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$project, $app, $version]);
 
         if (file_exists ($clone)) self::delete ($clone);
 
@@ -96,12 +93,12 @@ class GitClient
         if ($return !== 0)
             echo "\n". implode ("\n", $output) ."\n";
 
-        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.ci', $ci, LOCK_EX) ||
-            !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.cli', $bk, LOCK_EX))
+        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.io', $ci, LOCK_EX) ||
+            !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.sh', $bk, LOCK_EX))
         {
             self::delete ($clone);
 
-            throw new Exception ('Impossible to write .env, .env.ci and/or .env.cli files');
+            throw new Exception ('Impossible to write .env.io and/or .env.sh files');
         }
 
         return $clone;
@@ -130,12 +127,12 @@ class GitClient
             throw new Exception ('Impossible to clone repository at branch "'. $stage .'"');
         }
 
-        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.ci', $ci, LOCK_EX) ||
-            !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.cli', $bk, LOCK_EX))
+        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.io', $ci, LOCK_EX) ||
+            !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.sh', $bk, LOCK_EX))
         {
             self::delete ($clone);
 
-            throw new Exception ('Impossible to write .env, .env.ci and/or .env.cli files');
+            throw new Exception ('Impossible to write .env, .env.io and/or .env.sh files');
         }
 
         return $clone;

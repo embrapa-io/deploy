@@ -1,15 +1,10 @@
 <?php
 
-global $_daemon, $_nothing, $_builds, $_path;
-
-$_data = $_path . DIRECTORY_SEPARATOR .'data';
-
-if (!file_exists ($_data) || !is_dir ($_data))
-	throw new Exception ('Volume for data storage is not mounted!');
-
 $git = GitLab::singleton ();
 
-echo "INFO > Checking status of all ". sizeof ($_builds) ." builds configured... \n";
+$_apps = $_data . DIRECTORY_SEPARATOR .'apps';
+
+echo "INFO > Checking status of ". sizeof ($_builds) ." builds configured... \n";
 
 foreach ($_builds as $_build => $_b)
 {
@@ -21,7 +16,7 @@ foreach ($_builds as $_build => $_b)
 
 	echo "INFO > Checking if build '". $_build ."' is correctly configured... \n";
 
-	$_settings = $_path . DIRECTORY_SEPARATOR .'apps'. DIRECTORY_SEPARATOR . implode ('_', [$_b->project, $_b->app, $_b->stage]);
+	$_settings = $_data . DIRECTORY_SEPARATOR .'settings'. DIRECTORY_SEPARATOR . implode ('_', [$_b->project, $_b->app, $_b->stage]);
 
 	if (!file_exists ($_settings) || !is_dir ($_settings) || !file_exists ($_settings . DIRECTORY_SEPARATOR .'.env'))
 	{
@@ -118,11 +113,11 @@ foreach ($_builds as $_build => $_b)
 		continue;
 	}
 
-	$version = $_data . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app]) . DIRECTORY_SEPARATOR .'VERSION'. DIRECTORY_SEPARATOR . $_b->stage;
+	$version = $_apps . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app]) . DIRECTORY_SEPARATOR .'.version'. DIRECTORY_SEPARATOR . $_b->stage;
 
 	try
 	{
-		$_last = file_get_contents ($version);
+		$_last = $_force ? NULL : file_get_contents ($version);
 	}
 	catch (Exception $e)
 	{
@@ -297,7 +292,7 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		$clone = GitClient::singleton ()->cloneTag ($_b->project, $_b->app, $_b->stage, $_newer ['name'], $ci, $bk, $_path);
+		$clone = GitClient::singleton ()->cloneTag ($_b->project, $_b->app, $_b->stage, $_newer ['name'], $ci, $bk, $_apps);
 
 		echo "done! \n";
 	}
@@ -328,6 +323,13 @@ foreach ($_builds as $_build => $_b)
 	}
 
 	file_put_contents ($version, $_newer ['name'], LOCK_EX);
+
+	try
+	{
+		@unlink ($_apps . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app]) . DIRECTORY_SEPARATOR .'.rollback'. DIRECTORY_SEPARATOR . $_b->stage);
+	}
+	catch (Exception $e)
+	{}
 
 	echo "SUCCESS > All done! Version '". $_newer ['name'] ."' in '". $_b->stage ."' stage of application '". $_b->project ."/". $_b->app ."' is DEPLOYED! \n";
 

@@ -8,24 +8,24 @@ apt update && apt install nfs-common -y
 docker volume create --driver local --opt type=nfs --opt o=nfsvers=4,addr=storage.sede.embrapa.br,rw --opt device=:/mnt/nfs/swarm.sede.embrapa.br/agroapp_portal_alpha_db agroapp_portal_alpha_db
 
 2. Build
-env $(cat .env.ci) docker-compose up --force-recreate --build --no-start
+env $(cat .env.io) docker-compose up --force-recreate --build --no-start
 
 3. Push images to registry
-env $(cat .env.ci) docker-compose push
+env $(cat .env.io) docker-compose push
 
 4. Deploy
-env $(cat .env && cat .env.ci) docker stack deploy -c .embrapa/swarm/deployment.yaml agroapp_portal_alpha
+env $(cat .env && cat .env.io) docker stack deploy -c .embrapa/swarm/deployment.yaml agroapp_portal_alpha
 
 One shot services:
 
 1. Get Services
-env $(cat .env.cli) docker-compose config --services
+env $(cat .env.sh) docker-compose config --services
 
 2. Build:
-env $(cat .env.cli) docker-compose build --force-rm --no-cache [service]
+env $(cat .env.sh) docker-compose build --force-rm --no-cache [service]
 
 3. Push images to registry:
-env $(cat .env.cli) docker-compose push
+env $(cat .env.sh) docker-compose push
 
 4. Execute specific service:
 docker stack rm agroapp_portal_alpha_backup && docker stack deploy -c .embrapa/swarm/cli/backup.yaml --prune agroapp_portal_alpha_backup
@@ -77,9 +77,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Building application with Docker Compose... \n";
 
-        echo 'COMMAND > set -e && env $(cat .env.ci) '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $?'."\n";
+        echo 'COMMAND > set -e && env $(cat .env.io) '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $?'."\n";
 
-        passthru ('set -e && env $(cat .env.ci) '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $? 2>&1', $return);
+        passthru ('set -e && env $(cat .env.io) '. self::DOCKER_COMPOSE .' up --force-recreate --build --no-start && exit $? 2>&1', $return);
 
         if ($return !== 0)
             throw new Exception ('Error when buildings containers with Docker Compose');
@@ -89,9 +89,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Pushing images to registry... \n";
 
-        echo 'COMMAND > env $(cat .env.ci) '. self::DOCKER_COMPOSE .' push '."\n";
+        echo 'COMMAND > env $(cat .env.io) '. self::DOCKER_COMPOSE .' push '."\n";
 
-        exec ('env $(cat .env.ci) '. self::DOCKER_COMPOSE .' push 2>&1', $output, $return);
+        exec ('env $(cat .env.io) '. self::DOCKER_COMPOSE .' push 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -119,9 +119,9 @@ class DockerSwarm extends Orchestrator
 
             echo "INFO > Stopping application with Docker Swarm... \n";
 
-            echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name ."\n";
+            echo 'COMMAND > env $(cat .env && cat .env.io) '. self::DOCKER .' stack rm '. $name ."\n";
 
-            exec ('env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
+            exec ('env $(cat .env && cat .env.io) '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
 
             echo implode ("\n", $output) ."\n";
 
@@ -136,9 +136,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Deploying aplication stack as '". $name ."' in cluster with Docker Swarm... \n";
 
-        echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name ."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.io) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name ."\n";
 
-        exec ('env $(cat .env && cat .env.ci) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name .' 2>&1', $output, $return);
+        exec ('env $(cat .env && cat .env.io) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -161,9 +161,9 @@ class DockerSwarm extends Orchestrator
             return FALSE;
         }
 
-        echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config --profiles'."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.io) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config --profiles'."\n";
 
-        exec ('env $(cat .env && cat .env.ci) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config --profiles 2>&1', $profiles, $return);
+        exec ('env $(cat .env && cat .env.io) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config --profiles 2>&1', $profiles, $return);
 
         if ($return !== 0 || sizeof ($profiles) > 0)
         {
@@ -174,12 +174,12 @@ class DockerSwarm extends Orchestrator
 
         unset ($return);
 
-        echo 'COMMAND > env $(cat .env.ci) '. self::DOCKER_COMPOSE .' config'."\n";
+        echo 'COMMAND > env $(cat .env.io) '. self::DOCKER_COMPOSE .' config'."\n";
 
         $out1 = tempnam ('.embrapa', '_');
         $log1 = tempnam ('.embrapa', '_');
 
-        exec ('env $(cat .env.ci) '. self::DOCKER_COMPOSE .' config > '. $out1 .' 2> '. $log1, $trash, $return);
+        exec ('env $(cat .env.io) '. self::DOCKER_COMPOSE .' config > '. $out1 .' 2> '. $log1, $trash, $return);
 
         $output = file_exists ($log1) && is_readable ($log1) ? @file ($log1) : [];
 
@@ -204,12 +204,12 @@ class DockerSwarm extends Orchestrator
         unset ($return);
         unset ($output);
 
-        echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config'."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.io) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config'."\n";
 
         $out2 = tempnam ('.embrapa', '_');
         $log2 = tempnam ('.embrapa', '_');
 
-        exec ('env $(cat .env && cat .env.ci) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config > '. $out2 .' 2> '. $log2, $trash, $return);
+        exec ('env $(cat .env && cat .env.io) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/deployment.yaml config > '. $out2 .' 2> '. $log2, $trash, $return);
 
         $output = file_exists ($log2) && is_readable ($log2) ? @file ($log2) : [];
 
@@ -453,9 +453,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > All published PORTs are valid! \n";
 
-        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' config --services'."\n";
+        echo 'COMMAND > env $(cat .env.sh) '. self::DOCKER_COMPOSE .' config --services'."\n";
 
-        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' config --services 2>&1', $services, $return);
+        exec ('env $(cat .env.sh) '. self::DOCKER_COMPOSE .' config --services 2>&1', $services, $return);
 
         $cli = self::CLI_SERVICES;
 
@@ -498,9 +498,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Stopping application with Docker Swarm... \n";
 
-        echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name ."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.io) '. self::DOCKER .' stack rm '. $name ."\n";
 
-        exec ('env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
+        exec ('env $(cat .env && cat .env.io) '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -529,9 +529,9 @@ class DockerSwarm extends Orchestrator
         {
             echo "INFO > Stopping application with Docker Swarm... \n";
 
-            echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name ."\n";
+            echo 'COMMAND > env $(cat .env && cat .env.io) '. self::DOCKER .' stack rm '. $name ."\n";
 
-            exec ('env $(cat .env && cat .env.ci) '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
+            exec ('env $(cat .env && cat .env.io) '. self::DOCKER .' stack rm '. $name .' 2>&1', $output, $return);
 
             echo implode ("\n", $output) ."\n";
 
@@ -558,9 +558,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Deploying aplication stack as '". $name ."' in cluster with Docker Swarm... \n";
 
-        echo 'COMMAND > env $(cat .env && cat .env.ci) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name ."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.io) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name ."\n";
 
-        exec ('env $(cat .env && cat .env.ci) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name .' 2>&1', $output, $return);
+        exec ('env $(cat .env && cat .env.io) '. self::DOCKER .' stack deploy -c .embrapa/swarm/deployment.yaml '. $name .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -611,9 +611,9 @@ class DockerSwarm extends Orchestrator
 
         echo "INFO > Trying to get configured CLI services... \n";
 
-        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' config --services'."\n";
+        echo 'COMMAND > env $(cat .env.sh) '. self::DOCKER_COMPOSE .' config --services'."\n";
 
-        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' config --services 2>&1', $services, $return);
+        exec ('env $(cat .env.sh) '. self::DOCKER_COMPOSE .' config --services 2>&1', $services, $return);
 
         if ($return !== 0)
             throw new Exception ("Impossible to get services in 'docker-compose.yaml'");
@@ -624,9 +624,9 @@ class DockerSwarm extends Orchestrator
         $out = tempnam ('.embrapa', '_');
         $log = tempnam ('.embrapa', '_');
 
-        echo 'COMMAND > env $(cat .env && cat .env.cli) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/cli/'. $service .'.yaml config > '. $out .' 2> '. $log ."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.sh) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/cli/'. $service .'.yaml config > '. $out .' 2> '. $log ."\n";
 
-        exec ('env $(cat .env && cat .env.cli) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/cli/'. $service .'.yaml config > '. $out .' 2> '. $log, $trash, $return);
+        exec ('env $(cat .env && cat .env.sh) '. self::DOCKER_COMPOSE .' -f .embrapa/swarm/cli/'. $service .'.yaml config > '. $out .' 2> '. $log, $trash, $return);
 
         if (!file_exists ($out) || !is_readable ($out))
             throw new Exception ("Impossible to load interpolates '.embrapa/swarm/cli/'. $service .'.yaml'");
@@ -695,9 +695,9 @@ class DockerSwarm extends Orchestrator
                         throw new Exception ("Volume named '". $volume ['source'] ."' used by service '". $name ."' is not declared as external in '.embrapa/swarm/cli/'. $service .'.yaml'");
         }
 
-        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache '. $service ."\n";
+        echo 'COMMAND > env $(cat .env.sh) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache '. $service ."\n";
 
-        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache '. $service .' 2>&1', $output, $return);
+        exec ('env $(cat .env.sh) '. self::DOCKER_COMPOSE .' build --force-rm --no-cache '. $service .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -706,9 +706,9 @@ class DockerSwarm extends Orchestrator
             throw new Exception ("Service '". $service ."' failed to BUILD");
         }
 
-        echo 'COMMAND > env $(cat .env.cli) '. self::DOCKER_COMPOSE .' push '. $service ."\n";
+        echo 'COMMAND > env $(cat .env.sh) '. self::DOCKER_COMPOSE .' push '. $service ."\n";
 
-        exec ('env $(cat .env.cli) '. self::DOCKER_COMPOSE .' push '. $service .' 2>&1', $output, $return);
+        exec ('env $(cat .env.sh) '. self::DOCKER_COMPOSE .' push '. $service .' 2>&1', $output, $return);
 
         if ($return !== 0)
         {
@@ -726,9 +726,9 @@ class DockerSwarm extends Orchestrator
         if ($return1 !== 0)
             echo implode ("\n", $output1) ."\n";
 
-        echo 'COMMAND > env $(cat .env && cat .env.cli) '. self::DOCKER .' stack deploy -c .embrapa/swarm/cli/'. $service .'.yaml --prune '. $name ."\n";
+        echo 'COMMAND > env $(cat .env && cat .env.sh) '. self::DOCKER .' stack deploy -c .embrapa/swarm/cli/'. $service .'.yaml --prune '. $name ."\n";
 
-        exec ('env $(cat .env && cat .env.cli) '. self::DOCKER .' stack deploy -c .embrapa/swarm/cli/'. $service .'.yaml --prune '. $name .' 2>&1', $output2, $return2);
+        exec ('env $(cat .env && cat .env.sh) '. self::DOCKER .' stack deploy -c .embrapa/swarm/cli/'. $service .'.yaml --prune '. $name .' 2>&1', $output2, $return2);
 
         if ($return2 !== 0)
         {
@@ -743,7 +743,7 @@ class DockerSwarm extends Orchestrator
     static public function reference ()
     {
         $buffer  = "https://docs.docker.com/engine/reference/commandline/stack/ \n\n";
-        $buffer .= "Attention! To execute the commands, you need inject environment variables of '.env.ci' file. \n";
+        $buffer .= "Attention! To execute the commands, you need inject environment variables of '.env.io' file. \n";
 
         return $buffer;
     }

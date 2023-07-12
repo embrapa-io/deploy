@@ -32,28 +32,41 @@ $_operations = [
 		'Controller::validate',
 		1,
 		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
-		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+		[
+			'proj-a/app-1@beta,proj-b/web@release,proj-a/app-2@alpha',
+			'--all'
+		]
 	),
 	'deploy' => new Operation (
 		'Re-validate, prepare (i.e., create network) and deploy builds',
 		'Controller::deploy',
 		1,
-		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
-		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+		'[BUILD-1,BUILD-2,...,BUILD-N | --all] [--force]',
+		[
+			'proj-a/app-1@beta,proj-b/web@release,proj-a/app-2@alpha',
+			'--all',
+			'proj-b/web@release --force'
+		]
 	),
 	'stop' => new Operation (
 		'Stop running containers',
 		'Controller::stop',
 		1,
 		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
-		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+		[
+			'proj-a/app-1@beta,proj-b/web@release,proj-a/app-2@alpha',
+			'--all'
+		]
 	),
 	'restart' => new Operation (
 		'Start stopped or restart running containers',
 		'Controller::restart',
 		1,
 		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
-		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+		[
+			'proj-a/app-1@beta,proj-b/web@release,proj-a/app-2@alpha',
+			'--all'
+		]
 	),
 	'rollback' => new Operation (
 		'Rollback build to previous version',
@@ -67,21 +80,27 @@ $_operations = [
 		'Controller::backup',
 		1,
 		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
-		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+		[
+			'proj-a/app-1@beta,proj-b/web@release,proj-a/app-2@alpha',
+			'--all'
+		]
 	),
 	'sanitize' => new Operation (
-		'Run periodically sanitize proccess',
+		'Run sanitize proccess',
 		'Controller::sanitize',
 		1,
 		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
-		'project-a/app-1@beta,project-b/web@release,project-a/app-2@alpha'
+		[
+			'proj-a/app-1@beta,proj-b/web@release,proj-a/app-2@alpha',
+			'--all'
+		]
 	),
-	'more' => new Operation (
+	'info' => new Operation (
 		'How to execute other util commands',
-		'Controller::more',
+		'Controller::info',
 		0,
 		'',
-		''
+		[]
 	)
 ];
 
@@ -99,8 +118,6 @@ try
 }
 catch (Exception $e)
 {
-	echo "\n";
-
 	echo "Usage: docker exec -it releaser io COMMAND \n\n";
 
 	echo "Commands: \n";
@@ -110,20 +127,24 @@ catch (Exception $e)
 
 	echo "\n";
 
-	echo "See 'docker exec -it releaser io COMMAND --help' for more information on a command. \n\n";
+	echo "See 'docker exec -it releaser io COMMAND --help' for more information on a command.";
 
 	exit;
 }
 
-if ($argc != 2 + $_operations [$_operation]->params || ($argc > 2 && trim ($argv [2]) == '--help'))
+if ($argc < 2 + $_operations [$_operation]->params || ($argc > 2 && trim ($argv [2]) == '--help'))
 {
-	echo "\n";
+	echo "Usage: docker exec -it releaser io ". $_operation ." ". $_operations [$_operation]->usage;
 
-	echo "Usage: docker exec -it releaser io ". $_operation ." ". $_operations [$_operation]->usage ." \n\n";
+	if (sizeof ($_operations [$_operation]->examples))
+	{
+		echo "\n\n";
 
-	echo "Example: \n";
+		echo "Examples:";
 
-	echo "docker exec -it releaser io ". $_operation ." ". $_operations [$_operation]->example ." \n\n";
+		foreach ($_operations [$_operation]->examples as $ex)
+			echo "\ndocker exec -it releaser io ". $_operation ." ". $ex;
+	}
 
 	exit;
 }
@@ -163,7 +184,7 @@ $lifetimes = [
 
 $_lock = $_data . DIRECTORY_SEPARATOR .'.lock'. DIRECTORY_SEPARATOR . $_operation;
 
-@mkdir (dirname ($_lock), 0700, TRUE);
+@mkdir (dirname ($_lock));
 
 if ($_daemon)
 {
@@ -214,7 +235,7 @@ try
 
 	echo "FINISH > All done after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 
-	if ($_daemon && !$_nothing) Mail::singleton ()->send ('SUCCESS EXECUTION of Releaser Script', ob_get_clean ());
+	if ($_daemon && !$_nothing) Mail::singleton ()->send ('SUCCESS EXECUTION of Releaser', ob_get_clean ());
 
 	exit (0);
 }
@@ -229,7 +250,7 @@ try
 {
 	echo "FINISH > Stopped after ". number_format (time () - $_benchmark, 0, ',', '.') ." seconds!";
 
-	if ($_daemon) Mail::singleton ()->send ('CRITICAL ERROR of Releaser Script', ob_get_clean ());
+	if ($_daemon) Mail::singleton ()->send ('CRITICAL ERROR of Releaser', ob_get_clean ());
 }
 catch (Exception $e)
 {}

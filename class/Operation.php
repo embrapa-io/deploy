@@ -6,15 +6,15 @@ class Operation
     private $method = '';
     private $params = 0;
     private $usage = '';
-    private $example = '';
+    private $examples = [];
 
-    public function __construct ($info, $method, $params, $usage, $example)
+    public function __construct ($info, $method, $params, $usage, $examples)
     {
         $this->info = $info;
         $this->method = $method;
-        $this->params = $params;
+        $this->params = intval ($params);
         $this->usage = $usage;
-        $this->example = $example;
+        $this->examples = is_array ($examples) ? $examples : [ $examples ];
     }
 
     public function __get ($property)
