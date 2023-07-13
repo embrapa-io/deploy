@@ -38,12 +38,12 @@ class DockerSwarm extends Orchestrator
 
     static public function validate ($path, $namespace)
     {
-        return self::checkDockerSwarmFile ($path, $ports);
+        return self::checkDockerSwarmFile ($path);
     }
 
     static public function deploy ($path, $namespace)
     {
-        $valid = self::checkDockerSwarmFile ($path, $ports);
+        $valid = self::checkDockerSwarmFile ($path);
 
         if (!$valid)
             throw new Exception ('Invalid build (docker-compose.yaml) or deploy (.embrapa/swarm/deployment.yaml) files! Please, check configuration (volumes, ports, enviroment variables, etc)');
@@ -148,7 +148,7 @@ class DockerSwarm extends Orchestrator
         }
     }
 
-    static public function checkDockerSwarmFile ($folder, $ports)
+    static public function checkDockerSwarmFile ($folder)
     {
         echo "INFO > Validating Docker Compose and Swarm files... \n";
 
@@ -420,20 +420,6 @@ class DockerSwarm extends Orchestrator
                 return FALSE;
             }
 
-            if ($ports !== FALSE && isset ($service ['ports']))
-                foreach ($service ['ports'] as $trash => $port)
-                {
-                    if (!isset ($port ['published']) || !(int) $port ['published'])
-                    {
-                        echo "ERROR > Service '". $name ."' trying to expose a randomic port. All ports in services must be explicit! If you are not going to expose this service, remove it from '.embrapa/swarm/deployment.yaml'. \n";
-
-                        return FALSE;
-                    }
-
-                    if (!in_array ((int) $port ['published'], $ports))
-                        $invalidPorts [] = $port ['published'];
-                }
-
             if (isset ($service ['volumes']))
                 foreach ($service ['volumes'] as $trash => $volume)
                     if (!in_array ($volume ['source'], $volumes))
@@ -585,7 +571,7 @@ class DockerSwarm extends Orchestrator
         if (!in_array ($service, self::CLI_SERVICES))
             throw new Exception ("'". $service ."' is not a CLI service");
 
-        $valid = self::checkDockerSwarmFile ($path, FALSE);
+        $valid = self::checkDockerSwarmFile ($path);
 
         if (!$valid)
             throw new Exception ('Invalid build (docker-compose.yaml) or deploy (.embrapa/swarm/deployment.yaml) files! Please, check configuration (volumes, ports, enviroment variables, etc)');

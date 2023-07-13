@@ -30,8 +30,6 @@ foreach ($_builds as $_build => $_b)
 
 	if (!intval ($_b->matomo->id)) echo "WARNING > Configure a valid Matomo ID! \n";
 
-	// https://da5d463198b1440cbcb1280531b8ac48@bug.embrapa.io/78
-
 	if (!preg_match ('/^https:\/\/[a-f0-9]{32}@bug\.embrapa\.io\/[0-9]+$/', $_b->sentry->dsn))
 		echo "WARNING > Configure a valid Sentry DSN! \n";
 

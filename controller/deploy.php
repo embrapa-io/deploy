@@ -38,6 +38,11 @@ foreach ($_builds as $_build => $_b)
 		continue;
 	}
 
+	if (!intval ($_b->matomo->id)) echo "WARNING > Configure a valid Matomo ID! \n";
+
+	if (!preg_match ('/^https:\/\/[a-f0-9]{32}@bug\.embrapa\.io\/[0-9]+$/', $_b->sentry->dsn))
+		echo "WARNING > Configure a valid Sentry DSN! \n";
+
 	try
 	{
 		$project = $git->projectSearch ($_b->project);
