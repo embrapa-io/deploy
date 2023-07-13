@@ -50,7 +50,7 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		(self::singleton ()->orchestrator)::restart ($clone);
+		(self::singleton ()->orchestrator)::restart ($clone, implode ('_', [$_b->project, $_b->app, $_b->stage]));
 	}
 	catch (Exception $e)
 	{

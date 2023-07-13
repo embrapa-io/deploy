@@ -41,9 +41,9 @@ class DockerSwarm extends Orchestrator
         return self::checkDockerSwarmFile ($path, $namespace);
     }
 
-    static public function deploy ($path, $namespace)
+    static public function deploy ($path, $name)
     {
-        $valid = self::checkDockerSwarmFile ($path, $namespace);
+        $valid = self::checkDockerSwarmFile ($path, $name);
 
         if (!$valid)
             throw new Exception ('Invalid build (docker-compose.yaml) or deploy (.embrapa/swarm/deployment.yaml) files! Please, check configuration (volumes, ports, enviroment variables, etc)');
@@ -60,8 +60,6 @@ class DockerSwarm extends Orchestrator
         {
             echo "WARNING > Backup service failed: ". $e->getMessage () ."! \n";
         }
-
-        // $name = basename ($path);
 
         echo "INFO > Creating a stack network named as '". $name ."' with Docker... \n";
 
@@ -462,11 +460,9 @@ class DockerSwarm extends Orchestrator
         return TRUE;
     }
 
-    static public function stop ($path)
+    static public function stop ($path, $name)
     {
         chdir ($path);
-
-        // $name = basename ($path);
 
         echo "INFO > Checking if stack ". $name ." is deployed...\n";
 
@@ -494,11 +490,9 @@ class DockerSwarm extends Orchestrator
         }
     }
 
-    static public function restart ($path)
+    static public function restart ($path, $name)
     {
         chdir ($path);
-
-        // $name = basename ($path);
 
         echo "INFO > Checking if stack ". $name ." is deployed...\n";
 
@@ -554,22 +548,20 @@ class DockerSwarm extends Orchestrator
         }
     }
 
-    static public function backup ($path)
+    static public function backup ($path, $name)
     {
-        self::buildAndRunCliService ('backup', $path);
+        self::buildAndRunCliService ('backup', $path, $name);
     }
 
-    static public function sanitize ($path)
+    static public function sanitize ($path, $name)
     {
-        self::buildAndRunCliService ('sanitize', $path);
+        self::buildAndRunCliService ('sanitize', $path, $name);
     }
 
-    static private function buildAndRunCliService ($service, $path)
+    static private function buildAndRunCliService ($service, $path, $prefix)
     {
         if (!in_array ($service, self::CLI_SERVICES))
             throw new Exception ("'". $service ."' is not a CLI service");
-
-        $prefix = basename ($path);
 
         $valid = self::checkDockerSwarmFile ($path, $prefix);
 

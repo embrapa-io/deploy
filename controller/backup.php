@@ -52,7 +52,7 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		(self::singleton ()->orchestrator)::backup ($clone);
+		(self::singleton ()->orchestrator)::backup ($clone, implode ('_', [$_b->project, $_b->app, $_b->stage]));
 	}
 	catch (Exception $e)
 	{

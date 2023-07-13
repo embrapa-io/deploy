@@ -290,7 +290,7 @@ class DockerCompose extends Orchestrator
         return TRUE;
     }
 
-    static public function stop ($path)
+    static public function stop ($path, $namespace)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -313,7 +313,7 @@ class DockerCompose extends Orchestrator
             throw new Exception ('Error when trying to stop containers with Docker Compose');
     }
 
-    static public function restart ($path)
+    static public function restart ($path, $namespace)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -336,7 +336,7 @@ class DockerCompose extends Orchestrator
             throw new Exception ('Error when trying to restart containers with Docker Compose');
     }
 
-    static public function backup ($path)
+    static public function backup ($path, $namespace)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
@@ -372,7 +372,7 @@ class DockerCompose extends Orchestrator
         }
     }
 
-    static public function sanitize ($path)
+    static public function sanitize ($path, $namespace)
     {
         exec ('type '. self::DOCKER_COMPOSE, $trash, $return);
 
