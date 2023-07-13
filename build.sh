@@ -37,7 +37,7 @@ case $orchestrator in
     ;;
 
   DockerSwarm)
-    docker service rm releaser
+    docker service rm releaser || true
 
     docker build -t releaser .
 

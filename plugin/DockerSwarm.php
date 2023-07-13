@@ -38,12 +38,12 @@ class DockerSwarm extends Orchestrator
 
     static public function validate ($path, $namespace)
     {
-        return self::checkDockerSwarmFile ($path);
+        return self::checkDockerSwarmFile ($path, $namespace);
     }
 
     static public function deploy ($path, $namespace)
     {
-        $valid = self::checkDockerSwarmFile ($path);
+        $valid = self::checkDockerSwarmFile ($path, $namespace);
 
         if (!$valid)
             throw new Exception ('Invalid build (docker-compose.yaml) or deploy (.embrapa/swarm/deployment.yaml) files! Please, check configuration (volumes, ports, enviroment variables, etc)');
@@ -148,7 +148,7 @@ class DockerSwarm extends Orchestrator
         }
     }
 
-    static public function checkDockerSwarmFile ($folder)
+    static public function checkDockerSwarmFile ($folder, $prefix)
     {
         echo "INFO > Validating Docker Compose and Swarm files... \n";
 
@@ -264,8 +264,6 @@ class DockerSwarm extends Orchestrator
 
             return FALSE;
         }
-
-        // $prefix = basename ($folder);
 
         $volumes = [];
 
@@ -571,14 +569,14 @@ class DockerSwarm extends Orchestrator
         if (!in_array ($service, self::CLI_SERVICES))
             throw new Exception ("'". $service ."' is not a CLI service");
 
-        $valid = self::checkDockerSwarmFile ($path);
+        $prefix = basename ($path);
+
+        $valid = self::checkDockerSwarmFile ($path, $prefix);
 
         if (!$valid)
             throw new Exception ('Invalid build (docker-compose.yaml) or deploy (.embrapa/swarm/deployment.yaml) files! Please, check configuration (volumes, ports, enviroment variables, etc)');
 
         chdir ($path);
-
-        // $prefix = basename ($path);
 
         if (!file_exists ('.embrapa/swarm/cli/'. $service .'.yaml'))
             throw new Exception ("File '.embrapa/swarm/cli/". $service .".yaml' not found");
