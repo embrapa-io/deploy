@@ -54,7 +54,7 @@ class DockerSwarm extends Orchestrator
 
         try
         {
-            self::buildAndRunCliService ('backup', $path);
+            self::buildAndRunCliService ('backup', $path, $name);
         }
         catch (Exception $e)
         {

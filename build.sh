@@ -12,6 +12,8 @@ while
   [[ -z $orchestrator ]]
 do true; done
 
+echo "You is here: $(pwd)"
+
 while
   read -p "Directory: " path
   path=$(realpath "$path")
