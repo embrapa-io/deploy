@@ -1,6 +1,44 @@
 #!/usr/bin/env bash
 
-set -xe
+read -p "Publish? (y/N): " publish
+
+if [ "$publish" != "${publish#[Yy]}" ]; then
+  while
+    read -p "Version: " version
+    [[ -z $version || ! $version =~ [0-9]+\.[0-9]{2}\.[0-9]+\-[0-9]+ ]]
+  do true; done
+
+  set -xe
+
+  # https://github.com/abiosoft/colima/discussions/273
+  # https://stackoverflow.com/questions/47809904/how-to-set-architecture-for-docker-build-to-arm64
+  # https://docs.docker.com/build/guide/multi-platform/
+
+  docker buildx build \
+    --platform linux/arm64/v8,linux/amd64 \
+    --builder container \
+    --tag embrapa/releaser \
+    --tag embrapa/releaser:$version \
+    --push .
+
+  # Using official image...
+
+  # ...in Docker Compose:
+  # docker run --name releaser \
+  #   -v $(pwd):/data \
+  #   -v /var/run/docker.sock:/var/run/docker.sock \
+  #   --restart unless-stopped -d \
+  #   embrapa/releaser
+
+  # ...in Docker Swarm:
+  # docker service create --name releaser \
+  #   --constraint=node.hostname==$(hostname) \
+  #   --mount=type=bind,src=$(pwd),dst=/data \
+  #   --mount=type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
+  #   embrapa/releaser
+
+  exit 0
+fi
 
 while
   PS3="Orchestrator: "
@@ -20,12 +58,13 @@ while
   [[ ! -d "$path" ]]
 do true; done
 
+set -xe
+
 case $orchestrator in
 
   DockerCompose)
     docker stop releaser && docker rm releaser
 
-    # docker build -t releaser --no-cache .
     docker build -t releaser .
 
     docker run --name releaser \
