@@ -14,19 +14,6 @@ foreach ($_builds as $_build => $_b)
 
 	echo "=== ". $_build ." === \n\n";
 
-	echo "INFO > Checking if build '". $_build ."' is correctly configured... \n";
-
-	$_settings = $_data . DIRECTORY_SEPARATOR .'settings'. DIRECTORY_SEPARATOR . implode ('_', [$_b->project, $_b->app, $_b->stage]);
-
-	if (!file_exists ($_settings) || !is_dir ($_settings) || !file_exists ($_settings . DIRECTORY_SEPARATOR .'.env'))
-	{
-		echo "ERROR > Settings folder or environment variables file (.env) does not exists at '". $_settings ."'! \n\n";
-
-		$_nothing = FALSE;
-
-		continue;
-	}
-
 	echo "INFO > Checking if build '". $_build ."' has new tags... \n";
 
 	if (!preg_match ('/^[a-z0-9][a-z0-9-]+[a-z0-9]$/', $_b->project) || !preg_match ('/^[a-z0-9][a-z0-9-]+[a-z0-9]$/', $_b->app) || !in_array ($_b->stage, [ 'alpha', 'beta', 'release' ]))
@@ -120,16 +107,16 @@ foreach ($_builds as $_build => $_b)
 
 	$version = $_apps . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app]) . DIRECTORY_SEPARATOR .'.version'. DIRECTORY_SEPARATOR . $_b->stage;
 
+	$aux = dirname ($version);
+
+	if (!file_exists ($aux) || !is_dir ($aux)) mkdir ($aux, 0777, TRUE);
+
 	try
 	{
 		$_last = $_force ? NULL : file_get_contents ($version);
 	}
 	catch (Exception $e)
 	{
-		$aux = dirname ($version);
-
-		if (!file_exists ($aux) || !is_dir ($aux)) mkdir ($aux, 0777, TRUE);
-
 		$_last = NULL;
 	}
 
@@ -269,22 +256,14 @@ foreach ($_builds as $_build => $_b)
 
 	echo "INFO > CI/DI environment variables: \n\n". $ci ."\n";
 
-	try
-	{
-		$env = file_get_contents ($_settings . DIRECTORY_SEPARATOR .'.env');
-	}
-	catch (Exception $e)
-	{
-		echo "ERROR > Impossibe to load environment variables file: '". $_settings . DIRECTORY_SEPARATOR .".env'! \n\n";
+	$env = '';
 
-		if ($_daemon) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
-
-		continue;
-	}
+	foreach ($_b->env as $variable => $value)
+		$env .= $variable .'='. $value ."\n";
 
 	if (strpos ($env, ' ') !== false)
 	{
-		echo "ERROR > Environment variables can not contain spaces! Check file '". $_settings . DIRECTORY_SEPARATOR .'.env' ."'. \n\n";
+		echo "ERROR > Environment variables can not contain spaces! Check attribute 'env' at file 'builds.json'. \n\n";
 
 		if ($_daemon) Mail::singleton ()->send ($_build .' - RELEASE ERROR', ob_get_flush (), $_b->team);
 
@@ -297,7 +276,7 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		$clone = GitClient::singleton ()->cloneTag ($_b->project, $_b->app, $_b->stage, $_newer ['name'], $ci, $bk, $_apps);
+		$clone = GitClient::singleton ()->cloneTag ($_b->project, $_b->app, $_b->stage, $_newer ['name'], $ci, $bk, $env, $_apps);
 
 		echo "done! \n";
 	}
@@ -311,8 +290,6 @@ foreach ($_builds as $_build => $_b)
 
 		continue;
 	}
-
-	GitClient::singleton ()->copy ($_settings, $clone);
 
 	try
 	{

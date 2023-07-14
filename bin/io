@@ -198,13 +198,8 @@ if [ ! -f "/data/builds.json" ]; then
       --argjson sentry "$sentry" \
       --argjson matomo "$matomo" \
       --argjson auto "$auto" \
+      --argjson env "{}" \
       '$ARGS.named')
-
-    folder="${BASH_REMATCH[1]}_${BASH_REMATCH[2]}_${BASH_REMATCH[3]}"
-
-    mkdir -p /data/settings/$folder
-
-    echo "" > /data/settings/$folder/.env
 
     ((count++))
   done

@@ -10,17 +10,6 @@ foreach ($_builds as $_build => $_b)
 
 	echo "=== ". $_build ." === \n\n";
 
-	echo "INFO > Checking if build '". $_build ."' is correctly configured... \n";
-
-	$_settings = $_data . DIRECTORY_SEPARATOR .'settings'. DIRECTORY_SEPARATOR . implode ('_', [$_b->project, $_b->app, $_b->stage]);
-
-	if (!file_exists ($_settings) || !is_dir ($_settings) || !file_exists ($_settings . DIRECTORY_SEPARATOR .'.env'))
-	{
-		echo "ERROR > Settings folder or environment variables file (.env) does not exists at '". $_settings ."'! \n\n";
-
-		continue;
-	}
-
 	if (!preg_match ('/^[a-z0-9][a-z0-9-]+[a-z0-9]$/', $_b->project) || !preg_match ('/^[a-z0-9][a-z0-9-]+[a-z0-9]$/', $_b->app) || !in_array ($_b->stage, [ 'alpha', 'beta', 'release' ]))
 	{
 		echo "ERROR > Invalid build name! \n\n";
@@ -96,20 +85,14 @@ foreach ($_builds as $_build => $_b)
 
 	echo "INFO > CI/DI environment variables: \n\n". $ci ."\n";
 
-	try
-	{
-		$env = file_get_contents ($_settings . DIRECTORY_SEPARATOR .'.env');
-	}
-	catch (Exception $e)
-	{
-		echo "ERROR > Impossibe to load environment variables file: '". $_settings . DIRECTORY_SEPARATOR .".env'! \n\n";
+	$env = '';
 
-		continue;
-	}
+	foreach ($_b->env as $variable => $value)
+		$env .= $variable .'='. $value ."\n";
 
 	if (strpos ($env, ' ') !== false)
 	{
-		echo "ERROR > Environment variables can not contain spaces! Check file '". $_settings . DIRECTORY_SEPARATOR .'.env' ."'. \n\n";
+		echo "ERROR > Environment variables can not contain spaces! Check attribute 'env' at file 'builds.json'. \n\n";
 
 		continue;
 	}
@@ -120,7 +103,7 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		$clone = GitClient::singleton ()->cloneBranch ($_b->project, $_b->app, $_b->stage, $ci, $bk);
+		$clone = GitClient::singleton ()->cloneBranch ($_b->project, $_b->app, $_b->stage, $ci, $bk, $env);
 
 		echo "done! \n";
 	}
@@ -132,8 +115,6 @@ foreach ($_builds as $_build => $_b)
 
 		continue;
 	}
-
-	GitClient::singleton ()->copy ($_settings, $clone);
 
 	try
 	{

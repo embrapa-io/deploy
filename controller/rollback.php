@@ -20,16 +20,16 @@ try
 
 	$version = $_apps . DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app]) . DIRECTORY_SEPARATOR .'.version'. DIRECTORY_SEPARATOR . $_b->stage;
 
+	$aux = dirname ($version);
+
+	if (!file_exists ($aux) || !is_dir ($aux)) mkdir ($aux, 0777, TRUE);
+
 	try
 	{
 		$_last = file_get_contents ($version);
 	}
 	catch (Exception $e)
 	{
-		$aux = dirname ($version);
-
-		if (!file_exists ($aux) || !is_dir ($aux)) mkdir ($aux, 0777, TRUE);
-
 		$_last = NULL;
 	}
 
@@ -60,13 +60,6 @@ try
 	$_apps = $_data . DIRECTORY_SEPARATOR .'apps';
 
 	echo "INFO > Trying to rollback ". $_build ." from version ". $_last ." to ". $_version ."... \n";
-
-	echo "INFO > Checking if build is correctly configured... \n";
-
-	$_settings = $_data . DIRECTORY_SEPARATOR .'settings'. DIRECTORY_SEPARATOR . implode ('_', [$_b->project, $_b->app, $_b->stage]);
-
-	if (!file_exists ($_settings) || !is_dir ($_settings) || !file_exists ($_settings . DIRECTORY_SEPARATOR .'.env'))
-		throw new Exception ("Settings folder or environment variables file (.env) does not exists at '". $_settings ."'!");
 
 	echo "INFO > Checking tags... \n";
 
@@ -217,17 +210,13 @@ try
 
 	echo "INFO > CI/DI environment variables: \n\n". $ci ."\n";
 
-	try
-	{
-		$env = file_get_contents ($_settings . DIRECTORY_SEPARATOR .'.env');
-	}
-	catch (Exception $e)
-	{
-		throw new Exception ("Impossibe to load environment variables file: '". $_settings . DIRECTORY_SEPARATOR .".env'!");
-	}
+	$env = '';
+
+	foreach ($_b->env as $variable => $value)
+		$env .= $variable .'='. $value ."\n";
 
 	if (strpos ($env, ' ') !== false)
-		throw new Exception ("Environment variables can not contain spaces! Check file '". $_settings . DIRECTORY_SEPARATOR .'.env' ."'.");
+		throw new Exception ("Environment variables can not contain spaces! Check attribute 'env' at file 'builds.json'.");
 
 	echo "INFO > Trying to clone app... ";
 
@@ -235,7 +224,7 @@ try
 
 	try
 	{
-		$clone = GitClient::singleton ()->cloneTag ($_b->project, $_b->app, $_b->stage, $tag ['name'], $ci, $bk, $_apps);
+		$clone = GitClient::singleton ()->cloneTag ($_b->project, $_b->app, $_b->stage, $tag ['name'], $ci, $bk, $env, $_apps);
 
 		echo "done! \n";
 	}
@@ -245,8 +234,6 @@ try
 
 		throw new Exception ("Impossibe to clone repository. ". $e->getMessage () ."!");
 	}
-
-	GitClient::singleton ()->copy ($_settings, $clone);
 
 	try
 	{

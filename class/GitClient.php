@@ -62,7 +62,7 @@ class GitClient
                 copy ($f, $to . DIRECTORY_SEPARATOR . $files->getSubPathname ());
     }
 
-    public function cloneTag ($project, $app, $stage, $version, $ci, $bk, $path)
+    public function cloneTag ($project, $app, $stage, $version, $ci, $bk, $env, $path)
     {
         if (!file_exists ($path) || !is_dir ($path)) mkdir ($path);
 
@@ -93,18 +93,19 @@ class GitClient
         if ($return !== 0)
             echo "\n". implode ("\n", $output) ."\n";
 
-        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.io', $ci, LOCK_EX) ||
+        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env', $env, LOCK_EX) ||
+            !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.io', $ci, LOCK_EX) ||
             !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.sh', $bk, LOCK_EX))
         {
             self::delete ($clone);
 
-            throw new Exception ('Impossible to write .env.io and/or .env.sh files');
+            throw new Exception ('Impossible to write .env, .env.io and/or .env.sh files');
         }
 
         return $clone;
     }
 
-    public function cloneBranch ($project, $app, $stage, $ci, $bk)
+    public function cloneBranch ($project, $app, $stage, $ci, $bk, $env)
     {
         $tmp = DIRECTORY_SEPARATOR .'tmp'. DIRECTORY_SEPARATOR .'validate';
 
@@ -127,7 +128,8 @@ class GitClient
             throw new Exception ('Impossible to clone repository at branch "'. $stage .'"');
         }
 
-        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.io', $ci, LOCK_EX) ||
+        if (!file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env', $env, LOCK_EX) ||
+            !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.io', $ci, LOCK_EX) ||
             !file_put_contents ($clone . DIRECTORY_SEPARATOR .'.env.sh', $bk, LOCK_EX))
         {
             self::delete ($clone);

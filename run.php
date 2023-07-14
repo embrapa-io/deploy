@@ -1,6 +1,6 @@
 <?php
 /**
- * embrapa.io/releaser
+ * embrapa/releaser
  * Script for automatic deploy of Embrapa I/O apps releases in external remote environments.
  *
  * Copyright 2023: Brazilian Agricultural Research Corporation - Embrapa
@@ -24,11 +24,29 @@ if (!`which git`)
 if (!(int) ini_get ('register_argc_argv'))
 	die ("CRITICAL > This is a command-line script! You must enable 'register_argc_argv' directive. \n");
 
+$vars = [
+	'SERVER',
+	'ORCHESTRATOR',
+	'GITLAB_TOKEN',
+	'SMTP_HOST',
+	'SMTP_PORT',
+	'LOG_MAIL'
+];
+
+$unsetted = [];
+
+foreach ($vars as $trash => $var)
+	if (getenv ($var) === FALSE)
+		$unsetted [] = $var;
+
+if (sizeof ($unsetted))
+	die ("CRITICAL > Required environment variables are not setted: ". implode (', ', $unsetted) ."! \n");
+
 require_once 'class/Operation.php';
 
 $_operations = [
 	'validate' => new Operation (
-		'Validate builds (i.e., project app stages like alpha, beta or release)',
+		'Validate builds',
 		'Controller::validate',
 		1,
 		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
@@ -49,7 +67,7 @@ $_operations = [
 		]
 	),
 	'stop' => new Operation (
-		'Stop running containers',
+		'Stop running builds',
 		'Controller::stop',
 		1,
 		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
@@ -59,7 +77,7 @@ $_operations = [
 		]
 	),
 	'restart' => new Operation (
-		'Start stopped or restart running containers',
+		'Start stopped or restart running builds',
 		'Controller::restart',
 		1,
 		'[BUILD-1,BUILD-2,...,BUILD-N | --all]',
@@ -104,6 +122,8 @@ $_operations = [
 	)
 ];
 
+$container = getenv ('ORCHESTRATOR') == 'DockerSwarm' ? '$(docker ps -q -f name=releaser)' : 'releaser';
+
 try
 {
 	if ($argc < 2) throw new Exception ();
@@ -118,7 +138,7 @@ try
 }
 catch (Exception $e)
 {
-	echo "Usage: docker exec -it releaser io COMMAND \n\n";
+	echo "Usage: docker exec -it ". $container ." io COMMAND \n\n";
 
 	echo "Commands: \n";
 
@@ -127,14 +147,14 @@ catch (Exception $e)
 
 	echo "\n";
 
-	echo "See 'docker exec -it releaser io COMMAND --help' for more information on a command.";
+	echo "See 'docker exec -it ". $container ." io COMMAND --help' for more information on a command.";
 
 	exit;
 }
 
 if ($argc < 2 + $_operations [$_operation]->params || ($argc > 2 && trim ($argv [2]) == '--help'))
 {
-	echo "Usage: docker exec -it releaser io ". $_operation ." ". $_operations [$_operation]->usage;
+	echo "Usage: docker exec -it ". $container ." io ". $_operation ." ". $_operations [$_operation]->usage;
 
 	if (sizeof ($_operations [$_operation]->examples))
 	{
@@ -143,29 +163,11 @@ if ($argc < 2 + $_operations [$_operation]->params || ($argc > 2 && trim ($argv 
 		echo "Examples:";
 
 		foreach ($_operations [$_operation]->examples as $ex)
-			echo "\ndocker exec -it releaser io ". $_operation ." ". $ex;
+			echo "\ndocker exec -it ". $container ." io ". $_operation ." ". $ex;
 	}
 
 	exit;
 }
-
-$vars = [
-	'SERVER',
-	'ORCHESTRATOR',
-	'GITLAB_TOKEN',
-	'SMTP_HOST',
-	'SMTP_PORT',
-	'LOG_MAIL'
-];
-
-$unsetted = [];
-
-foreach ($vars as $trash => $var)
-	if (getenv ($var) === FALSE)
-		$unsetted [] = $var;
-
-if (sizeof ($unsetted))
-	die ("CRITICAL > Required environment variables are not setted: ". implode (', ', $unsetted) ."! \n");
 
 $_path = dirname (__FILE__);
 
