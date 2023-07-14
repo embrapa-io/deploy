@@ -48,7 +48,7 @@ foreach ($_builds as $_build => $_b)
 		$_rollback = NULL;
 	}
 
-	if (!is_null ($_rollback) && self::score ($_b->stage, $_rollback) > self::score ($_b->stage, $_last))
+	if (!is_null ($_rollback) && self::score ($_b->stage, $_rollback) && trim ($_rollback) != trim ($_last))
 	{
 		$_version = $_rollback;
 		$isRollbacked = TRUE;
