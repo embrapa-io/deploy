@@ -182,8 +182,6 @@ if [ ! -f "/data/builds.json" ]; then
 
   for build in $builds
   do
-    echo "try [$build]"
-
     if [[ ! $build =~ [[:space:]]*([a-z0-9][a-z0-9-]+[a-z0-9])\/([a-z0-9][a-z0-9-]+[a-z0-9])@((alpha)|(beta)|(release))[[:space:]]* ]]; then
       echo "The build format for '$build' is incorrect! It will be ignored."
 
