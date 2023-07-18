@@ -19,6 +19,7 @@ if [ "$publish" != "${publish#[Yy]}" ]; then
     --builder container \
     --tag embrapa/releaser \
     --tag embrapa/releaser:$version \
+    --build-arg IO_RELEASER_VERSION=$version \
     --push .
 
   # Using official image...
@@ -60,12 +61,14 @@ do true; done
 
 set -xe
 
+version="$(date '+0.%g.%-m-dev.')$((1 + RANDOM % 10))"
+
 case $orchestrator in
 
   DockerCompose)
     docker stop releaser && docker rm releaser
 
-    docker build -t releaser .
+    docker build -t releaser --build-arg IO_RELEASER_VERSION=$version .
 
     docker run --name releaser \
       -v $path:/data \
@@ -80,7 +83,7 @@ case $orchestrator in
   DockerSwarm)
     docker service rm releaser || true
 
-    docker build -t releaser .
+    docker build -t releaser --build-arg IO_RELEASER_VERSION=$version .
 
     docker service create --name releaser \
       --constraint=node.hostname==$(hostname) \

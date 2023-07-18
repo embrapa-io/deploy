@@ -213,6 +213,8 @@ require_once 'plugin/DockerSwarm.php';
 if (!Orchestrator::exists (getenv ('ORCHESTRATOR')))
 	die ("CRITICAL > Orchestrator '". getenv ('ORCHESTRATOR') ."' defined in '.env' is not valid! \n");
 
+\Sentry\init (['dsn' => 'https://dca31eca2c6644c687f46ecb99602841@o1289077.ingest.sentry.io/4505550695759872' ]);
+
 set_error_handler ('handleError');
 
 try
@@ -243,6 +245,8 @@ try
 }
 catch (Exception $e)
 {
+	\Sentry\captureException ($e);
+
 	echo "\n";
 
 	echo "CRITICAL > ". $e->getMessage () ." \n\n";
@@ -255,4 +259,6 @@ try
 	if ($_daemon) Mail::singleton ()->send ('CRITICAL ERROR of Releaser', ob_get_clean ());
 }
 catch (Exception $e)
-{}
+{
+	\Sentry\captureException ($e);
+}
