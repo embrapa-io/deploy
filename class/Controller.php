@@ -147,6 +147,31 @@ class Controller
         require self::PATH .'info.php';
     }
 
+    static public function mail ($addrs)
+    {
+        $addresses = [];
+
+        foreach (explode (',', $addrs) as $trash => $addr)
+            if (filter_var ($addr, FILTER_VALIDATE_EMAIL))
+                $addresses [] = $addr;
+
+        if (!sizeof ($addresses))
+        {
+            echo "ERROR > No valid e-mail addresses! \n\n";
+
+            return;
+        }
+
+        try
+        {
+            Mail::singleton ()->send ('RELEASER - E-MAIL TEST', "It's ok!", $addresses);
+        }
+        catch (Exception $e)
+        {
+            echo "ERROR > ". $e->getMessage () ."! \n\n";
+        }
+    }
+
     static protected function score ($stage, $version)
     {
         if (!preg_match (self::VERSION_REGEX [$stage], $version, $matches)) return 0;

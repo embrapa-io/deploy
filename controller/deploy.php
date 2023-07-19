@@ -113,14 +113,14 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		$_last = $_force ? NULL : file_get_contents ($version);
+		$_last = $_force ? NULL : trim (file_get_contents ($version));
 	}
 	catch (Exception $e)
 	{
 		$_last = NULL;
 	}
 
-	if (is_string ($_last) && trim ($_last) !== '' && self::score ($_b->stage, $_last) >= $_newer ['score'])
+	if (is_string ($_last) && $_last !== '' && self::score ($_b->stage, $_last) >= $_newer ['score'])
 	{
 		echo "INFO > No new tags found! \n\n";
 

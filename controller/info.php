@@ -19,14 +19,14 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		$_last = file_get_contents ($version);
+		$_last = trim (file_get_contents ($version));
 	}
 	catch (Exception $e)
 	{
 		$_last = NULL;
 	}
 
-	if (!is_string ($_last) || trim ($_last) == '' || !self::score ($_b->stage, $_last))
+	if (!is_string ($_last) || $_last == '' || !self::score ($_b->stage, $_last))
 	{
 		echo "ERROR > No one valid version was deployed to build: ". $_build ."! \n";
 
@@ -37,7 +37,7 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		$_rollback = file_get_contents ($rollback);
+		$_rollback = trim (file_get_contents ($rollback));
 	}
 	catch (Exception $e)
 	{
@@ -48,7 +48,7 @@ foreach ($_builds as $_build => $_b)
 		$_rollback = NULL;
 	}
 
-	if (!is_null ($_rollback) && self::score ($_b->stage, $_rollback) && trim ($_rollback) != trim ($_last))
+	if (!is_null ($_rollback) && self::score ($_b->stage, $_rollback) && $_rollback != $_last)
 	{
 		$_version = $_rollback;
 		$isRollbacked = TRUE;
@@ -68,10 +68,10 @@ foreach ($_builds as $_build => $_b)
 		continue;
 	}
 
-	if ($isRollbacked) echo "Important! This version has rollbacked from version ". $_last .". \n";
-
 	echo "To ". $_build ." (version ". $_version ."): \n";
 	echo "cd ". $clone ." \n";
+
+	if ($isRollbacked) echo "Important! This version has rollbacked from version ". $_last .". \n";
 }
 
 echo "\n";

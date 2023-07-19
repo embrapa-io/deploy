@@ -119,6 +119,15 @@ $_operations = [
 		0,
 		'',
 		[]
+	),
+	'mail' => new Operation (
+		'Test e-mail settings',
+		'Controller::mail',
+		1,
+		'[MAIL-1,MAIL-2,...,MAIL-N]',
+		[
+			'jose.silva@embrapa.br,maria.santos@embrapa.br'
+		]
 	)
 ];
 

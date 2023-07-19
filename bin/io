@@ -2,7 +2,7 @@
 
 echo ""
 
-echo "A command line utility to assist in deploying and updating Embrapa I/O apps."
+echo "A command line utility to help deploy and update Embrapa I/O apps."
 echo "For detailed info, access: https://embrapa.io/docs/releaser/"
 
 if [ -n "$IO_RELEASER_VERSION" ]; then

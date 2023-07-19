@@ -26,14 +26,14 @@ try
 
 	try
 	{
-		$_last = file_get_contents ($version);
+		$_last = trim (file_get_contents ($version));
 	}
 	catch (Exception $e)
 	{
 		$_last = NULL;
 	}
 
-	if (is_null ($_last))
+	if (is_null ($_last) || $_last == '')
 		throw new Exception ("No version deployed! Use command 'deploy' instead!");
 
 	if ($_last == $_version)
@@ -43,7 +43,7 @@ try
 
 	try
 	{
-		$_rollback = file_get_contents ($rollback);
+		$_rollback = trim (file_get_contents ($rollback));
 	}
 	catch (Exception $e)
 	{

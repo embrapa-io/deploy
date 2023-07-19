@@ -25,14 +25,14 @@ foreach ($_builds as $_build => $_b)
 
 	try
 	{
-		$_last = file_get_contents ($version);
+		$_last = trim (file_get_contents ($version));
 	}
 	catch (Exception $e)
 	{
 		$_last = NULL;
 	}
 
-	if (!is_string ($_last) || trim ($_last) == '' || !self::score ($_b->stage, $_last))
+	if (!is_string ($_last) || $_last == '' || !self::score ($_b->stage, $_last))
 	{
 		echo "ERROR > No one valid version was deployed to this build! \n\n";
 
