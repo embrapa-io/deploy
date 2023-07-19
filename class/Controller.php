@@ -157,18 +157,22 @@ class Controller
 
         if (!sizeof ($addresses))
         {
-            echo "ERROR > No valid e-mail addresses! \n\n";
+            echo "ERROR > No valid e-mail addresses! \n";
 
             return;
         }
 
+        echo "INFO > Sending e-mail messages to ". implode (', ', array_merge ([ getenv ('LOG_MAIL') ], $addresses)) ."... \n";
+
         try
         {
             Mail::singleton ()->send ('RELEASER - E-MAIL TEST', "It's ok!", $addresses);
+
+            echo "SUCCESS > Sended! \n";
         }
         catch (Exception $e)
         {
-            echo "ERROR > ". $e->getMessage () ."! \n\n";
+            echo "ERROR > ". $e->getMessage () ."! \n";
         }
     }
 
