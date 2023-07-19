@@ -59,9 +59,9 @@ foreach ($_builds as $_build => $_b)
 		$isRollbacked = FALSE;
 	}
 
-	$clone = DIRECTORY_SEPARATOR .'apps'. DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app, $_version]);
+	$clone = 'apps'. DIRECTORY_SEPARATOR . implode (DIRECTORY_SEPARATOR, [$_b->project, $_b->app, $_version]);
 
-	if (!file_exists ($_data . $clone) || !is_dir ($_data . $clone))
+	if (!file_exists ($_data . DIRECTORY_SEPARATOR . $clone) || !is_dir ($_data . DIRECTORY_SEPARATOR . $clone))
 	{
 		echo "ERROR > The clone to version/tag '". $_version ."' of build '". $_build ."' is missing! \n";
 
