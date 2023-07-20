@@ -12,6 +12,8 @@ class Mail
 
     private $log = null;
 
+    private $from = null;
+
     private final function __construct ()
 	{
         // https://symfony.com/doc/current/mailer.html
@@ -28,6 +30,8 @@ class Mail
         $transport = Transport::fromDsn ($dsn);
 
         $this->mailer = new Mailer ($transport);
+
+        $this->from = getenv ('SMTP_FROM');
 
         $this->log = getenv ('LOG_MAIL');
     }
@@ -47,7 +51,7 @@ class Mail
     public function send ($subject, $message, $cc = [])
     {
         $email = (new Email ())
-            ->from ('Embrapa I/O Releaser Script <no-reply@embrapa.io>')
+            ->from ($this->from)
             ->to ($this->log)
             ->subject ($subject)
             ->text ($message);
@@ -55,5 +59,10 @@ class Mail
         if (is_array ($cc) && sizeof ($cc)) $email->cc (...$cc);
 
         $this->mailer->send ($email);
+    }
+
+    static public function isValid ($addr)
+    {
+        return filter_var ($addr, FILTER_VALIDATE_EMAIL);
     }
 }

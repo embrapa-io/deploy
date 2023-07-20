@@ -27,7 +27,10 @@ if [ ! -f "/data/.env" ]; then
 
     echo ""
 
-    read -p "Server name (e.g., foo.example.com): " server
+    while
+      read -p "Server name (e.g., foo.example.com): " server
+      [[ -z $server || $server =~ [^a-z0-9-\.] ]]
+    do true; done
 
     echo ""
 
@@ -44,20 +47,25 @@ if [ ! -f "/data/.env" ]; then
     echo ""
 
     echo "Go to https://git.embrapa.io and, in your profile, generate a new Access Token with 'read_api' scope."
-    read -p "GitLab token: " token
+
+    while
+      read -p "GitLab token: " token
+      [[ -z $token || ${#token} != 20 ]]
+    do true; done
 
     echo ""
 
-    read -p "SMTP host (e.g., smtp.gmail.com): " smtp_host
+    while
+      read -p "SMTP host (e.g., smtp.gmail.com): " smtp_host
+      [[ -z $smtp_host || $smtp_host =~ [^a-z0-9-\.] ]]
+    do true; done
 
     while
-      read -p "SMTP port (e.g., 25): " smtp_port
+      read -p "SMTP port (e.g., 587): " smtp_port
       [[ -z $smtp_port || $smtp_port == *[^0-9]* ]]
     do true; done
 
-    read -p "SMTP secure (y/n): " smtp_secure
-    read -p "SMTP user (e.g., you@gmail.com): " smtp_user
-    read -p "SMTP password: " smtp_password
+    read -p "SMTP secure (y/N): " smtp_secure
 
     if [ "$smtp_secure" != "${smtp_secure#[Yy]}" ]; then
       smtp_secure="yes"
@@ -65,9 +73,20 @@ if [ ! -f "/data/.env" ]; then
       smtp_secure="no"
     fi
 
+    while
+      read -p "SMTP from (e.g., no-reply@example.com): " smtp_from
+      [[ -z $smtp_from || $smtp_from =~ [^a-zA-Z0-9,-@\.] ]]
+    do true; done
+
+    read -p "SMTP user (e.g., you@gmail.com): " smtp_user
+    read -p "SMTP password: " smtp_password
+
     echo ""
 
-    read -p "e-Mail to log: " email
+    while
+      read -p "e-Mail to log: " email
+      [[ -z $email || $email =~ [^a-zA-Z0-9,-@\.] ]]
+    do true; done
 
     echo ""
 
@@ -81,6 +100,7 @@ if [ ! -f "/data/.env" ]; then
     out+="SMTP_HOST=${smtp_host//[[:space:]]/}"$'\n'
     out+="SMTP_PORT=${smtp_port//[^0-9]/}"$'\n'
     out+="SMTP_SECURE=$smtp_secure"$'\n'
+    out+="SMTP_FROM=${smtp_from//[[:space:]]/}"$'\n'
     out+="SMTP_USER=${smtp_user//[[:space:]]/}"$'\n'
     out+="SMTP_PASS=${smtp_pass//[[:space:]]/}"$'\n'
     out+="LOG_MAIL=${email//[[:space:]]/}"
@@ -89,7 +109,7 @@ if [ ! -f "/data/.env" ]; then
 
     echo ""
 
-    read -p "Is correct? (y/n): " confirm
+    read -p "Is correct? (y/N): " confirm
 
     [[ -z $confirm || "$confirm" == "${confirm#[Yy]}" ]]
   do true; done

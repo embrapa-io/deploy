@@ -30,6 +30,7 @@ $vars = [
 	'GITLAB_TOKEN',
 	'SMTP_HOST',
 	'SMTP_PORT',
+	'SMTP_FROM',
 	'LOG_MAIL'
 ];
 
@@ -41,6 +42,19 @@ foreach ($vars as $trash => $var)
 
 if (sizeof ($unsetted))
 	die ("CRITICAL > Required environment variables are not setted: ". implode (', ', $unsetted) ."! \n");
+
+require_once 'class/Mail.php';
+
+if (!Mail::isValid (getenv ('SMTP_FROM')))
+	echo "WARNING > The email address entered in 'SMTP_FROM' (at '.env' file) appears to be invalid! \n";
+
+if (!Mail::isValid (getenv ('LOG_MAIL')))
+	echo "WARNING > The email address entered in 'LOG_MAIL' (at '.env' file) appears to be invalid! \n";
+
+require_once 'plugin/Orchestrator.php';
+
+if (!Orchestrator::exists (getenv ('ORCHESTRATOR')))
+	die ("CRITICAL > Orchestrator '". getenv ('ORCHESTRATOR') ."' defined in '.env' is not valid! \n");
 
 require_once 'class/Operation.php';
 
@@ -209,18 +223,12 @@ require_once 'vendor/autoload.php';
 
 require_once 'helper/error.php';
 
-require_once 'class/Log.php';
-require_once 'class/Mail.php';
 require_once 'class/GitLab.php';
 require_once 'class/GitClient.php';
 require_once 'class/Controller.php';
 
-require_once 'plugin/Orchestrator.php';
 require_once 'plugin/DockerCompose.php';
 require_once 'plugin/DockerSwarm.php';
-
-if (!Orchestrator::exists (getenv ('ORCHESTRATOR')))
-	die ("CRITICAL > Orchestrator '". getenv ('ORCHESTRATOR') ."' defined in '.env' is not valid! \n");
 
 \Sentry\init (['dsn' => 'https://dca31eca2c6644c687f46ecb99602841@o1289077.ingest.sentry.io/4505550695759872' ]);
 

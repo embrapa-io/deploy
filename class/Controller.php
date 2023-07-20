@@ -152,7 +152,7 @@ class Controller
         $addresses = [];
 
         foreach (explode (',', $addrs) as $trash => $addr)
-            if (filter_var ($addr, FILTER_VALIDATE_EMAIL))
+            if (Mail::isValid ($addr))
                 $addresses [] = $addr;
 
         if (!sizeof ($addresses))
