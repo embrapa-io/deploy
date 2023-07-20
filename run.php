@@ -103,7 +103,7 @@ $_operations = [
 	'rollback' => new Operation (
 		'Rollback build to previous version',
 		'Controller::rollback',
-		1,
+		2,
 		'[BUILD] [VERSION]',
 		'my-project/backend@beta 3.'. date ('y.n') .'-beta.17'
 	),
